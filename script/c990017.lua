@@ -1,10 +1,10 @@
 
---Infernity Berserker
 local s,id=GetID()
 function s.initial_effect(c)
 	c:EnableReviveLimit()
 	--synchro summon
 	Synchro.AddProcedure(c,nil,2,2,Synchro.NonTuner(nil),1,99)
+	--inmunidad
 	local e1=Effect.CreateEffect(c)
 	e1:SetType(EFFECT_TYPE_SINGLE)
 	e1:SetCode(EFFECT_IMMUNE_EFFECT)
@@ -13,7 +13,7 @@ function s.initial_effect(c)
 	e1:SetCondition(s.imcon)
 	e1:SetValue(s.efilter)
 	c:RegisterEffect(e1)
-	--special summon
+	--special summon a "resonator"
 	local e2=Effect.CreateEffect(c)
 	e2:SetDescription(aux.Stringid(id,0))
 	e2:SetCategory(CATEGORY_SPECIAL_SUMMON)
@@ -25,6 +25,7 @@ function s.initial_effect(c)
 	e2:SetTarget(s.sptg)
 	e2:SetOperation(s.spop)
 	c:RegisterEffect(e2)
+	--invocar dos afinadores incluyendo un "resonador"
 	local e3=Effect.CreateEffect(c)
 	e3:SetCategory(CATEGORY_SPECIAL_SUMMON)
 	e3:SetType(EFFECT_TYPE_IGNITION)
@@ -43,15 +44,15 @@ function s.efilter(e,te)
 	--return te:GetOwner()~=e:GetOwner()
 end
 --local ni.2
-function s.filter(c,e,tp)
-	return c:IsSetCard(0x57) and c:GetCode()~=id and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
+function s.rfilter(c,e,tp)
+	return c:IsSetCard(0x57) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
 end
 function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk,chkc)
-	if chkc then return chkc:IsControler(tp) and chkc:IsLocation(LOCATION_GRAVE) and s.filter(chkc,e,tp) end
+	if chkc then return chkc:IsControler(tp) and chkc:IsLocation(LOCATION_GRAVE) and s.rfilter(chkc,e,tp) end
 	if chk==0 then return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
-		and Duel.IsExistingTarget(s.filter,tp,LOCATION_GRAVE,0,1,nil,e,tp) end
+		and Duel.IsExistingTarget(s.rfilter,tp,LOCATION_GRAVE,0,1,nil,e,tp) end
 	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
-	local g=Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)
+	local g=Duel.SelectTarget(tp,s.rfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)
 	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)
 end
 function s.spop(e,tp,eg,ep,ev,re,r,rp)
