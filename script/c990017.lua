@@ -39,7 +39,8 @@ function s.imcon(e,tp,eg,ep,ev,re,r,rp)
 	return e:GetHandler():GetSummonType()==SUMMON_TYPE_SYNCHRO and e:GetHandler():GetMaterial():IsExists(Card.IsSetCard,1,nil,0x57)
 end
 function s.efilter(e,te)
-	return te:GetOwner()~=e:GetOwner()
+	return te:GetOwnerPlayer()~=e:GetHandlerPlayer()
+	--return te:GetOwner()~=e:GetOwner()
 end
 --local ni.2
 function s.filter(c,e,tp)
