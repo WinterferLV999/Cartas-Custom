@@ -65,10 +65,10 @@ function s.splimit(e,se,sp,st)
 end
 --local No.0,1
 function s.imcon1(e,tp,eg,ep,ev,re,r,rp)
-	return e:GetHandler():GetSummonType()==SUMMON_TYPE_FUSION and e:GetHandler():GetMaterial():IsExists(Card.IsCode,1,nil,53251824) and Duel.GetTurnPlayer()~=tp
+	return e:GetHandler():GetSummonType()==SUMMON_TYPE_FUSION and e:GetHandler():GetMaterial():IsExists(Card.IsCode,1,nil,80666118) and Duel.GetTurnPlayer()~=tp
 end
 function s.imcon2(e,tp,eg,ep,ev,re,r,rp)
-	return e:GetHandler():GetSummonType()==SUMMON_TYPE_FUSION and e:GetHandler():GetMaterial():IsExists(Card.IsCode,1,nil,53251824) and Duel.GetTurnPlayer()==e:GetHandlerPlayer()
+	return e:GetHandler():GetSummonType()==SUMMON_TYPE_FUSION and e:GetHandler():GetMaterial():IsExists(Card.IsCode,1,nil,70902743) and Duel.GetTurnPlayer()==e:GetHandlerPlayer()
 end
 function s.efilter(e,te)
 	if not te then return false end
