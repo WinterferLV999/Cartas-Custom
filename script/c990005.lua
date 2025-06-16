@@ -30,7 +30,7 @@ function s.initial_effect(c)
 	e3:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
 	e3:SetCode(EVENT_PRE_DAMAGE_CALCULATE)
 	e3:SetCountLimit(1)
-	e3:SetCost(aux.dxmcostgen(1,1,nil))
+	e3:SetCost(Cost.DetachFromSelf(1))
 	e3:SetCondition(s.atkcon)
 	e3:SetTarget(s.atktg)
 	e3:SetOperation(s.atkop)
@@ -46,20 +46,21 @@ function s.initial_effect(c)
 	e4:SetOperation(s.operation)
 	c:RegisterEffect(e4)
 	--Cannot be destroyed by effects
-	local e5=Effect.CreateEffect(c)
-	e5:SetType(EFFECT_TYPE_SINGLE)
-	e5:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
-	e5:SetRange(LOCATION_MZONE)
-	e5:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
-	e5:SetCondition(s.dacon)
-	e5:SetValue(1)
-	c:RegisterEffect(e5)
+	--local e5=Effect.CreateEffect(c)
+	--e5:SetType(EFFECT_TYPE_SINGLE)
+	--e5:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+	--e5:SetRange(LOCATION_MZONE)
+	--e5:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
+	--e5:SetCondition(s.dacon)
+	--e5:SetValue(1)
+	--c:RegisterEffect(e5)
 end
 s.listed_series={0x3b}
 s.listed_names={CARD_NECROVALLEY}
 s.material_setcode=0x3b
-function s.ovfilter(c,tp,xyzc)
-	return c:IsFaceup() and c:IsSetCard(0x3b,xyzc,SUMMON_TYPE_XYZ,tp) and c:IsType(TYPE_XYZ,xyzc,SUMMON_TYPE_XYZ,tp)
+s.listed_names={44405066}
+function s.ovfilter(c,tp,lc)
+	return c:IsFaceup() and c:IsSummonCode(lc,SUMMON_TYPE_XYZ,tp,44405066)
 end
 --local no.1
 function s.descon(e,tp,eg,ep,ev,re,r,rp)

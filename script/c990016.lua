@@ -4,7 +4,6 @@ function s.initial_effect(c)
 	--synchro summon
 	Synchro.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsAttribute,ATTRIBUTE_WIND),1,1,Synchro.NonTuner(nil),1,99)
 	c:EnableReviveLimit()
-	--Special Summon any number of "Speedroid" monsters from your GY
 	local e1=Effect.CreateEffect(c)
 	e1:SetDescription(aux.Stringid(id,0))
 	e1:SetCategory(CATEGORY_SPECIAL_SUMMON)
@@ -12,6 +11,7 @@ function s.initial_effect(c)
 	e1:SetProperty(EFFECT_FLAG_DELAY)
 	e1:SetCode(EVENT_SPSUMMON_SUCCESS)
 	e1:SetCountLimit(1,id)
+	--e1:SetCondition(function(e) return e:GetHandler():IsSynchroSummoned() end)
 	e1:SetCondition(function(e) return e:GetHandler():IsSummonType(SUMMON_TYPE_SYNCHRO) end)
 	e1:SetTarget(s.sptg)
 	e1:SetOperation(s.spop)
@@ -22,7 +22,7 @@ function s.initial_effect(c)
 	e2:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
 	e2:SetCode(EFFECT_SYNCHRO_MATERIAL_CUSTOM)
 	e2:SetRange(LOCATION_MZONE)
-	e1:SetOperation(s.synop)
+	e2:SetOperation(s.synop)
 	c:RegisterEffect(e2)
 end
 s.material_setcode=0x2016
@@ -35,7 +35,7 @@ function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk)
 	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE)
 end
 function s.spop(e,tp,eg,ep,ev,re,r,rp)
-	--Cannot Special Summon monsters, except "Speedroid" monsters
+	--Cannot Special Summon monsters, except "WIND" monsters
 	local e1=Effect.CreateEffect(e:GetHandler())
 	e1:SetDescription(aux.Stringid(id,2))
 	e1:SetType(EFFECT_TYPE_FIELD)

@@ -4,7 +4,8 @@ function s.initial_effect(c)
 	--fusion material
 	c:EnableReviveLimit()
 	Fusion.AddProcCodeFun(c,CARD_REDEYES_B_DRAGON,aux.FilterBoolFunction(Card.IsCode,30079770),1,true)
-	c:EnableCounterPermit(0x27)
+	c:EnableCounterPermit(0x1ff)
+	--add counter
 	local e1=Effect.CreateEffect(c)
 	e1:SetDescription(aux.Stringid(id,0))
 	e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)
@@ -17,14 +18,14 @@ function s.initial_effect(c)
 	e2:SetDescription(aux.Stringid(id,2))
 	e2:SetRange(LOCATION_MZONE)
 	e2:SetCategory(CATEGORY_DESTROY)
-	e2:SetType(EFFECT_TYPE_QUICK_O)
-	e2:SetCode(EVENT_FREE_CHAIN)
+	e2:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+	e2:SetCode(EVENT_BATTLE_START)
 	e2:SetCountLimit(1)
 	e2:SetCondition(s.condition0)
 	e2:SetTarget(s.target0)
 	e2:SetOperation(s.operation0)
 	c:RegisterEffect(e2)
-	--Special Summon "Vijam" and change attack target
+	--Special Summon this card and change attack target
 	local e3=Effect.CreateEffect(c)
 	e3:SetCategory(CATEGORY_SPECIAL_SUMMON)
 	e3:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)
@@ -46,7 +47,7 @@ function s.initial_effect(c)
 	e4:SetTarget(s.destg)
 	e4:SetOperation(s.desop)
 	c:RegisterEffect(e4)
-	--attackup
+	--gana 1000 de ATK por contador
 	local e5=Effect.CreateEffect(c)
 	e5:SetType(EFFECT_TYPE_SINGLE)
 	e5:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
@@ -62,7 +63,7 @@ s.material_setcode=0x3b
 function s.ctop(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
 	if c:IsFaceup() and c:IsRelateToEffect(e) then
-		c:AddCounter(0x27,1)
+		c:AddCounter(0x1ff,1)
 	end
 end
 --LOCAL NO.2
@@ -103,7 +104,8 @@ end
 function s.spfilter(c,e,tp)
 	return c:IsCode(990003) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
 end
-function s.target1(e,tp,eg,ep,ev,re,r,rp,chk)
+function s.target1(e,tp,eg,ep,ev,re,r,rp,chk,chkc)
+	local c=e:GetHandler()
 	if chk==0 then return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
 		and Duel.IsExistingMatchingCard(s.spfilter,tp,LOCATION_GRAVE,0,1,nil,e,tp) end
 	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE)
@@ -114,7 +116,7 @@ function s.activate1(e,tp,eg,ep,ev,re,r,rp)
 	local tc=Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp):GetFirst()
 	local at=Duel.GetAttacker()
 	if tc and Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)>0 and at and at:CanAttack() and not at:IsImmuneToEffect(e) then
-		Duel.CalculateDamage(at,tc)
+		Duel.ChangeAttackTarget(tc)
 	end
 end
 --local no.4
@@ -124,7 +126,7 @@ function s.descon(e,tp,eg,ep,ev,re,r,rp)
 end
 function s.descost(e,tp,eg,ep,ev,re,r,rp,chk)
 	local c=e:GetHandler()
-	if chk==0 then return c:GetCounter(0x27)>=3 and c:IsReleasable() end
+	if chk==0 then return c:GetCounter(0x1ff)>=3 and c:IsReleasable() end
 	Duel.Destroy(c,REASON_COST)
 end
 function s.filter(c,e,tp)
@@ -144,7 +146,7 @@ function s.desop(e,tp,eg,ep,ev,re,r,rp)
 		Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)
 	end
 end
-
+--local no.5
 function s.attackup(e,c)
-	return c:GetCounter(0x27)*1000
+	return c:GetCounter(0x1ff)*1000
 end

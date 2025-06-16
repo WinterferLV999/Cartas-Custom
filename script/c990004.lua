@@ -31,6 +31,7 @@ function s.initial_effect(c)
 	e3:SetCode(EVENT_PHASE+PHASE_END)
 	e3:SetRange(LOCATION_MZONE)
 	e3:SetCountLimit(1,id)
+	e3:SetCondition(s.damcon)
 	e3:SetTarget(s.damtg)
 	e3:SetOperation(s.damop)
 	c:RegisterEffect(e3)
@@ -61,26 +62,61 @@ function s.efilter(e,te)
 	return te:IsActiveType(TYPE_MONSTER) and te:GetOwner()~=e:GetOwner()
 end
 --local no.2
+function s.desfilter(c)
+	return c:IsFaceup() and c:IsLevelBelow(7) and c:IsDestructable()
+end
 function s.destg(e,tp,eg,ep,ev,re,r,rp,chk)
-	local g=Duel.GetFieldGroup(tp,0,LOCATION_ONFIELD)
-	if chk==0 then return #g>0 end
+	local c=e:GetHandler()
+	if chk==0 then return true end
+	local g=Duel.GetMatchingGroup(aux.TRUE,tp,0,LOCATION_MZONE,nil)
 	Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)
+	local mg,atk=g:GetMaxGroup(Card.GetAttack)
+	Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,atk)
+end
+function s.filter(c)
+	if c:IsPreviousPosition(POS_FACEUP) then
+		return c:GetPreviousAttackOnField()
+	else return 0 end
 end
 function s.desop(e,tp,eg,ep,ev,re,r,rp)
-	local g=Duel.GetFieldGroup(tp,0,LOCATION_ONFIELD)
-	if #g>0 then
-		Duel.Destroy(g,REASON_EFFECT)
+	local c=e:GetHandler()
+	local g=Duel.GetMatchingGroup(aux.TRUE,tp,0,LOCATION_MZONE,nil)
+	if #g>0 and Duel.Destroy(g,REASON_EFFECT)~=0 then
+		local og=Duel.GetOperatedGroup()
+		local mg,atk=og:GetMaxGroup(s.filter)
+		local dam=Duel.Damage(1-tp,atk,REASON_EFFECT)
+		if dam>0 and c:IsFaceup() and c:IsRelateToEffect(e) then
+			local e1=Effect.CreateEffect(c)
+			e1:SetType(EFFECT_TYPE_SINGLE)
+			--e1:SetCode(EFFECT_SET_ATTACK_FINAL)
+		    e1:SetCode(EFFECT_UPDATE_ATTACK)
+			e1:SetValue(dam)
+			e1:SetReset(RESET_EVENT+RESETS_STANDARD_DISABLE)
+			c:RegisterEffect(e1)
+		end
 	end
 end
+--function s.destg(e,tp,eg,ep,ev,re,r,rp,chk)
+	--local g=Duel.GetFieldGroup(tp,0,LOCATION_ONFIELD)
+	--if chk==0 then return #g>0 end
+	--Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)
+--end
+--function s.desop(e,tp,eg,ep,ev,re,r,rp)
+	--local g=Duel.GetFieldGroup(tp,0,LOCATION_ONFIELD)
+	--if #g>0 then
+		--Duel.Destroy(g,REASON_EFFECT)
+	--end
+--end
 --local no. 3
+function s.damcon(e,tp,eg,ep,ev,re,r,rp)
+	return Duel.IsTurnPlayer(1-tp)
+end
 function s.damtg(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return true end
-	local ct=Duel.GetFieldGroupCount(tp,0xc,0xc)
 	Duel.SetTargetPlayer(1-tp)
-	Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,ct*200)
+	Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,0)
 end
 function s.damop(e,tp,eg,ep,ev,re,r,rp)
 	local p=Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER)
-	local ct=Duel.GetFieldGroupCount(tp,0xc,0xc)
-	Duel.Damage(p,ct*200,REASON_EFFECT)
+	Duel.Damage(p,Duel.GetFieldGroupCount(p,LOCATION_HAND,0)*300,REASON_EFFECT)
 end
