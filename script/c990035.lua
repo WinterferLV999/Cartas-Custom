@@ -13,7 +13,7 @@ function s.initial_effect(c)
 	e1:SetRange(LOCATION_MZONE)
 	e1:SetValue(s.atkval)
 	c:RegisterEffect(e1)
-	--disable
+	--Negate the activation of the Monster effect
 	local e2=Effect.CreateEffect(c)
 	e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
 	e2:SetCode(EVENT_CHAIN_SOLVING)
@@ -21,7 +21,7 @@ function s.initial_effect(c)
 	--e2:SetCondition(s.discon)
 	e2:SetOperation(s.disop)
 	c:RegisterEffect(e2)
-	--Negate the activation of the effect
+	--Negate the activation of the Spell/Trap effect
 	local e3=Effect.CreateEffect(c)
 	e3:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
 	e3:SetCode(EVENT_CHAIN_ACTIVATING)
