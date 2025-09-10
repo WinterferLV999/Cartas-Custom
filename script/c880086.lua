@@ -8,7 +8,6 @@ function s.initial_effect(c)
 	c:RegisterEffect(e1)
 	--Add itself to the hand
 	local e2=Effect.CreateEffect(c)
-	e2:SetDescription(aux.Stringid(id,1))
 	e2:SetCategory(CATEGORY_TOHAND)
 	e2:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)
 	e2:SetProperty(EFFECT_FLAG_DELAY)
@@ -23,7 +22,7 @@ function s.initial_effect(c)
 	c:RegisterEffect(e3)
 	--Place 3 of your "Rose" monsters on the bottom of the Deck then draw 3 card
 	local e4=Effect.CreateEffect(c)
-	e4:SetDescription(aux.Stringid(id,1))
+	e4:SetDescription(aux.Stringid(id,0))
 	e4:SetCategory(CATEGORY_TODECK+CATEGORY_DRAW)
 	e4:SetType(EFFECT_TYPE_IGNITION)
 	e4:SetProperty(EFFECT_FLAG_CARD_TARGET)
@@ -34,7 +33,7 @@ function s.initial_effect(c)
 	c:RegisterEffect(e4)
 	--Special Summon 1 "Rose" monster
 	local e5=Effect.CreateEffect(c)
-	e5:SetDescription(aux.Stringid(id,0))
+	e5:SetDescription(aux.Stringid(id,1))
 	e5:SetCategory(CATEGORY_SPECIAL_SUMMON)
 	e5:SetType(EFFECT_TYPE_IGNITION)
 	e5:SetCountLimit(1,id)
@@ -120,7 +119,7 @@ function s.operation(e,tp,eg,ep,ev,re,r,rp)
 	    Duel.SpecialSummonComplete()
 	end
 	-- Token Rose
-	if e:GetHandler():IsRelateToEffect(e) and Duel.GetLocationCount(tp,LOCATION_MZONE)>0 and Duel.SelectYesNo(tp,aux.Stringid(id,1))
+	if e:GetHandler():IsRelateToEffect(e) and Duel.GetLocationCount(tp,LOCATION_MZONE)>0 and Duel.SelectYesNo(tp,aux.Stringid(id,2))
 		and Duel.IsPlayerCanSpecialSummonMonster(tp,TOKEN_ROSE,SET_ROSE,TYPES_TOKEN,800,800,2,RACE_PLANT,ATTRIBUTE_DARK,POS_FACEUP_ATTACK) then
 		local token=Duel.CreateToken(tp,TOKEN_ROSE)
 		Duel.SpecialSummon(token,0,tp,tp,false,false,POS_FACEUP_DEFENSE)
@@ -135,7 +134,7 @@ function s.operationx(e,tp,eg,ep,ev,re,r,rp)
 	if #g>0 then 
 		Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)
 	end
-	if e:GetHandler():IsRelateToEffect(e) and Duel.GetLocationCount(tp,LOCATION_MZONE)>0 and Duel.SelectYesNo(tp,aux.Stringid(id,1))
+	if e:GetHandler():IsRelateToEffect(e) and Duel.GetLocationCount(tp,LOCATION_MZONE)>0 and Duel.SelectYesNo(tp,aux.Stringid(id,2))
 		and Duel.IsPlayerCanSpecialSummonMonster(tp,TOKEN_ROSE,SET_ROSE,TYPES_TOKEN,800,800,2,RACE_PLANT,ATTRIBUTE_DARK,POS_FACEUP_ATTACK) then
 		local token=Duel.CreateToken(tp,TOKEN_ROSE)
 		Duel.SpecialSummon(token,0,tp,tp,false,false,POS_FACEUP_DEFENSE)

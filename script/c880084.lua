@@ -3,7 +3,6 @@ local s,id=GetID()
 function s.initial_effect(c)
 	--Special Summon this card from your hand
 	local e1=Effect.CreateEffect(c)
-	e1:SetDescription(aux.Stringid(id,0))
 	e1:SetCategory(CATEGORY_SPECIAL_SUMMON)
 	e1:SetType(EFFECT_TYPE_IGNITION)
 	e1:SetRange(LOCATION_HAND)
@@ -14,7 +13,6 @@ function s.initial_effect(c)
 	c:RegisterEffect(e1)
 	--add 1 rose dragon
 	local e2=Effect.CreateEffect(c)
-	e2:SetDescription(aux.Stringid(984114,0))
 	e2:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH)
 	e2:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
 	e2:SetCode(EVENT_SPSUMMON_SUCCESS)
@@ -46,7 +44,7 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
 	end
 	--Cannot Special Summon from the Extra Deck, except Synchro monsters
 	local e1=Effect.CreateEffect(c)
-	e1:SetDescription(aux.Stringid(id,2))
+	e1:SetDescription(aux.Stringid(id,0))
 	e1:SetType(EFFECT_TYPE_FIELD)
 	e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_CLIENT_HINT)
 	e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)
@@ -80,7 +78,7 @@ function s.op(e,tp,eg,ep,ev,re,r,rp)
 		Duel.ShuffleDeck(tp)
 	end
 	local g2=Duel.GetMatchingGroup(s.sfilter,tp,LOCATION_HAND,0,nil)
-	if #g2>0 and Duel.SelectYesNo(tp,aux.Stringid(id,2)) then
+	if #g2>0 and Duel.SelectYesNo(tp,aux.Stringid(id,1)) then
 		Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SUMMON)
 		local tc=Duel.SelectMatchingCard(tp,s.sfilter,tp,LOCATION_HAND,0,1,1,nil):GetFirst()
 		if tc then
