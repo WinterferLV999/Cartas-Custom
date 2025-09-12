@@ -47,7 +47,7 @@ function s.spcon(e,c)
 end
 --Local No.2
 function s.chcon1(e,tp,eg,ep,ev,re,r,rp)
-	return ep==1-tp and re:IsMonsterEffect() or ep==1-tp and re:IsHasType(EFFECT_TYPE_ACTIVATE)
+	return ep==1-tp and (re:IsHasType(EFFECT_TYPE_ACTIVATE) or re:IsActiveType(TYPE_MONSTER))
 		and Duel.IsExistingMatchingCard(s.confilter,tp,LOCATION_SZONE,0,1,nil)
 end
 function s.chop1(e,tp,eg,ep,ev,re,r,rp)
@@ -83,9 +83,6 @@ function s.cfilter(c,tp)
 end
 function s.thtdcon(e,tp,eg,ep,ev,re,r,rp)
 	return eg:IsExists(s.cfilter,1,nil,tp)
-end
-function s.sfilter(c)
-	return c:IsFaceup() and c:IsSetCard(SET_HORUS)
 end
 function s.thtdop(e,tp,eg,ep,ev,re,r,rp)
 	Duel.Hint(HINT_SELECTMSG,tp,aux.Stringid(54719828,1))
