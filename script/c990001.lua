@@ -42,10 +42,10 @@ function s.thcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	e:GetHandler():RemoveOverlayCard(tp,1,1,REASON_COST)
 end
 function s.cfilter(c,tc,tp)
-	return c:IsLinkMonster() and not c:IsCode(tc:GetCode(nil,SUMMON_TYPE_LINK,tp))
+	return c:IsLinkMonster() and c:IsSetCard(0x119) and not c:IsCode(tc:GetCode(nil,SUMMON_TYPE_LINK,tp))
 end
 function s.starget(e,tp,eg,ep,ev,re,r,rp,chk)
-	if chk==0 then return Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_EXTRA,0,1,nil,e:GetHandler()) end
+	if chk==0 then return Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_EXTRA,0,1,nil,e:GetHandler()) end
 end
 function s.soperation(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
