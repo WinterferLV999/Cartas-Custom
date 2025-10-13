@@ -19,7 +19,7 @@ function s.initial_effect(c)
 	c:RegisterEffect(e1)
 	--destroy drawn
 	local e9=Effect.CreateEffect(c)
-	e9:SetDescription(aux.Stringid(13331639,0))
+	e9:SetDescription(aux.Stringid(id,1))
 	e9:SetCategory(CATEGORY_DESTROY)
 	e9:SetProperty(EFFECT_FLAG_DELAY+EFFECT_FLAG_DAMAGE_STEP)
 	e9:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)

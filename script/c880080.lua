@@ -24,7 +24,7 @@ function s.initial_effect(c)
 end
 s.listed_series={0x7b}
 function s.cfilter(c)
-	return c:IsSetCard(0x7b) and c:IsMonster() and not c:IsType(TYPE_XYZ) and c:IsAbleToHand() 
+	return c:IsSetCard(0x7b) and c:IsMonster() and c:GetLevel()>0 and c:IsAbleToHand() 
 end
 function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk,chkc)
 	if chkc then return chkc:IsLocation(LOCATION_MZONE) and chkc:IsControler(tp) and s.cfilter(chkc) end
