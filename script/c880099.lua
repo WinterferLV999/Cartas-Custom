@@ -57,7 +57,7 @@ end
 s.listed_series={SET_NUMBER_C}
 --local no.1
 function s.cfilter(c,e,tp,xyz)
-	return c:IsCode(98555327) and c:IsPreviousLocation(LOCATION_MZONE)
+	return c:IsCode(58820923) and c:IsPreviousLocation(LOCATION_MZONE)
 	--return c:IsCode(98555327) and c:IsPreviousControler(tp) and c:IsReason(REASON_DESTROY)
 		and c:IsCanBeXyzMaterial(xyz,tp) and (not e or c:IsRelateToEffect(e))
 end

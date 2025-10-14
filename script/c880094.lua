@@ -82,6 +82,7 @@ function s.effop(e,tp,eg,ep,ev,re,r,rp)
 	local rc=c:GetReasonCard()
 	--Cannot be destroyed by battle
 	local e1=Effect.CreateEffect(rc)
+	e1:SetDescription(3066)
 	e1:SetType(EFFECT_TYPE_SINGLE)
 	e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
 	e1:SetRange(LOCATION_MZONE)
@@ -91,17 +92,7 @@ function s.effop(e,tp,eg,ep,ev,re,r,rp)
 	rc:RegisterEffect(e1,true)
 	--Cannot be destroyed by opponent's effects
 	local e2=e1:Clone()
-	e2:SetDescription(3066)
 	e2:SetProperty(EFFECT_FLAG_CLIENT_HINT+EFFECT_FLAG_SINGLE_RANGE)
 	e2:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
-	e2:SetValue(aux.indoval)
-	rc:RegisterEffect(e2,true)
-	if not rc:IsType(TYPE_EFFECT) then
-		local e3=Effect.CreateEffect(c)
-		e3:SetType(EFFECT_TYPE_SINGLE)
-		e3:SetCode(EFFECT_ADD_TYPE)
-		e3:SetValue(TYPE_EFFECT)
-		e3:SetReset(RESET_EVENT|RESETS_STANDARD)
-		rc:RegisterEffect(e3,true)
-	end
+	rc:RegisterEffect(e2)
 end
