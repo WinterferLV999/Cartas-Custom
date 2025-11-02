@@ -52,7 +52,7 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
 			local c=e:GetHandler()
 			--If it is used for the Xyz Summon of a LIGHT monster this turn, it can be treated as a Level 8 monster
 			local e1=Effect.CreateEffect(c)
-			e1:SetDescription(aux.Stringid(id,0))
+			e1:SetDescription(aux.Stringid(id,2))
 			e1:SetType(EFFECT_TYPE_SINGLE)
 			e1:SetProperty(EFFECT_FLAG_CLIENT_HINT)
 			e1:SetCode(EFFECT_XYZ_LEVEL)
