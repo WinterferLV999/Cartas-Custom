@@ -5,88 +5,58 @@ function s.initial_effect(c)
 	c:EnableReviveLimit()
 	--Synchro Summon Procedure: 1 Tuner + 1+ non-Tuner monsters
 	Synchro.AddProcedure(c,nil,1,1,Synchro.NonTuner(nil),1,99)
-	--return to extra deck
+	--synlimit
 	local e1=Effect.CreateEffect(c)
 	e1:SetDescription(aux.Stringid(id,0))
-	e1:SetCategory(CATEGORY_TODECK)
-	e1:SetType(EFFECT_TYPE_QUICK_O)
-	e1:SetCode(EVENT_SPSUMMON_SUCCESS)
-	e1:SetRange(LOCATION_MZONE)
-	e1:SetCountLimit(1,id)
-	e1:SetProperty(EFFECT_FLAG_CARD_TARGET)
-	--e1:SetCondition(function(e) return e:GetHandler():IsSynchroSummoned() end)
-	e1:SetCondition(s.condition)
-	e1:SetTarget(s.target)
-	e1:SetOperation(s.operation)
+	e1:SetType(EFFECT_TYPE_SINGLE)
+	e1:SetCode(EFFECT_CANNOT_BE_SYNCHRO_MATERIAL)
+	e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+	e1:SetValue(s.synlimit)
 	c:RegisterEffect(e1)
-	--Synchro Summon during the opponent's Main Phase
-	local e2=Effect.CreateEffect(c)
-	e2:SetDescription(aux.Stringid(id,0))
-	e2:SetCategory(CATEGORY_SPECIAL_SUMMON)
-	e2:SetType(EFFECT_TYPE_QUICK_O)
-	e2:SetCode(EVENT_FREE_CHAIN)
-	e2:SetRange(LOCATION_MZONE)
-	e2:SetHintTiming(0,TIMING_MAIN_END)
-	e2:SetCountLimit(1,id)
-	e2:SetCondition(function(e,tp) return Duel.IsTurnPlayer(1-tp) and Duel.IsMainPhase() end)
-	e2:SetTarget(s.syncsumtg)
-	e2:SetOperation(s.syncsumop)
-	c:RegisterEffect(e2)
 	--Negate the effects of all face-up cards your opponent currently controls
+	local e2=Effect.CreateEffect(c)
+	e2:SetDescription(aux.Stringid(id,1))
+	e2:SetCategory(CATEGORY_DISABLE)
+	e2:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+	e2:SetCode(EVENT_BE_MATERIAL)
+	e2:SetCountLimit(1,{id,1})
+	e2:SetCondition(s.spcon)
+	e2:SetTarget(s.negtg)
+	e2:SetOperation(s.negop)
+	c:RegisterEffect(e2)
+	--Cannot be destroyed
 	local e3=Effect.CreateEffect(c)
-	e3:SetDescription(aux.Stringid(id,0))
-	e3:SetCategory(CATEGORY_DISABLE)
+	e3:SetCategory(CATEGORY_ATKCHANGE)
 	e3:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
 	e3:SetCode(EVENT_BE_MATERIAL)
 	e3:SetCountLimit(1,{id,1})
-	e3:SetCondition(s.spcon)
-	e3:SetTarget(s.negtg)
-	e3:SetOperation(s.negop)
+	e3:SetCondition(s.con)
+	e3:SetOperation(s.op)
 	c:RegisterEffect(e3)
+	--graveyard synchro
+	local e4=Effect.CreateEffect(c)
+	e4:SetDescription(aux.Stringid(id,3))
+	e4:SetType(EFFECT_TYPE_SINGLE)
+	e4:SetCode(id)
+	c:RegisterEffect(e4)
+	aux.GlobalCheck(s,function()
+		local ge2=Effect.CreateEffect(c)
+		ge2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+		ge2:SetCode(EVENT_ADJUST)
+		ge2:SetOperation(s.synchk)
+		Duel.RegisterEffect(ge2,0)
+	end)
 end
+s.listed_names={CARD_BLACK_ROSE_DRAGON}
 --Local no.1
-function s.condition(e,tp,eg,ep,ev,re,r,rp)
-	return e:GetHandler():IsSummonType(SUMMON_TYPE_SYNCHRO)
-end
-function s.filter(c)
-	return c:IsFaceup() and c:IsSetCard(SET_ROSE_DRAGON) and c:IsAbleToDeck()
-end
-function s.target(e,tp,eg,ep,ev,re,r,rp,chk,chkc)
-	if chkc then return chkc:IsOnField() and chkc:IsControler(tp) and s.filter(chkc) end
-	if chk==0 then return Duel.IsExistingTarget(s.filter,1-tp,0,LOCATION_GRAVE+LOCATION_REMOVED,1,nil) end
-	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_TODECK)
-	local g=Duel.SelectTarget(tp,s.filter,1-tp,0,LOCATION_GRAVE+LOCATION_REMOVED,1,1,nil)
-	Duel.SetOperationInfo(0,CATEGORY_TODECK,g,#g,0,0)
-end
-function s.operation(e,tp,eg,ep,ev,re,r,rp)
-	local tc=Duel.GetFirstTarget()
-	if tc:IsRelateToEffect(e) then
-		Duel.SendtoDeck(tc,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)
-	end
+function s.synlimit(e,c)
+	if not c then return false end
+	return not (c:IsSetCard(SET_ROSE_DRAGON) or c:IsRace(RACE_DRAGON))
 end
 --Local no.2
-function s.syncmfilter(c,must)
-	return c:IsSetCard(SET_ROSE) and c:IsSynchroSummonable(must)
-end
-function s.syncsumtg(e,tp,eg,ep,ev,re,r,rp,chk)
-	local c=e:GetHandler()
-	if chk==0 then return Duel.IsExistingMatchingCard(s.syncmfilter,tp,LOCATION_EXTRA,0,1,nil,c) end
-	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_EXTRA)
-end
-function s.syncsumop(e,tp,eg,ep,ev,re,r,rp)
-	local c=e:GetHandler()
-	if c:IsControler(1-tp) or not c:IsRelateToEffect(e) or c:IsFacedown() then return end
-	local g=Duel.GetMatchingGroup(s.syncmfilter,tp,LOCATION_EXTRA,0,nil,c)
-	if #g>0 then
-		Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
-		local sg=g:Select(tp,1,1,nil)
-		Duel.SynchroSummon(tp,sg:GetFirst(),c)
-	end
-end
---Local no.3
 function s.spcon(e,tp,eg,ep,ev,re,r,rp)
 	return e:GetHandler():IsLocation(LOCATION_GRAVE) and r==REASON_SYNCHRO
-		and e:GetHandler():GetReasonCard():IsSetCard(SET_ROSE_DRAGON)
+		and e:GetHandler():GetReasonCard():IsCode(73580471)
 end
 function s.negtg(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return Duel.IsExistingMatchingCard(Card.IsNegatable,tp,0,LOCATION_ONFIELD,1,nil) end
@@ -101,4 +71,82 @@ function s.negop(e,tp,eg,ep,ev,re,r,rp)
 		--Negate their effects
 		tc:NegateEffects(c,nil,true)
 	end
+	local c=e:GetHandler()
+	local sync=c:GetReasonCard()
+	--Cannot be destroyed by card effects
+	local e1=Effect.CreateEffect(c)
+	e1:SetDescription(aux.Stringid(id,2))
+	e1:SetType(EFFECT_TYPE_SINGLE)
+	e1:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
+	e1:SetValue(1)
+	e1:SetReset(RESETS_STANDARD_PHASE_END)
+	sync:RegisterEffect(e1)
+end
+--Local no.3
+function s.con(e,tp,eg,ep,ev,re,r,rp)
+	return e:GetHandler():IsLocation(LOCATION_GRAVE) and r==REASON_SYNCHRO
+		and e:GetHandler():GetReasonCard():IsCode(73580471)
+end
+function s.op(e,tp,eg,ep,ev,re,r,rp)
+	local c=e:GetHandler()
+	local sync=c:GetReasonCard()
+	--Cannot be destroyed by card effects
+	local e1=Effect.CreateEffect(c)
+	e1:SetDescription(aux.Stringid(id,2))
+	e1:SetType(EFFECT_TYPE_SINGLE)
+	e1:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
+	e1:SetValue(1)
+	e1:SetReset(RESETS_STANDARD_PHASE_END)
+	sync:RegisterEffect(e1)
+end
+--Local no.4
+function s.synchk(e,tp,eg,ep,ev,re,r,rp)
+	local sg=Duel.GetMatchingGroup(s.regfilter,tp,0xff,0xff,nil)
+	local tc=sg:GetFirst()
+	while tc do
+		tc:RegisterFlagEffect(id+1,0,0,0)
+		local tpe=tc.synchro_type
+		local t=tc.synchro_parameters
+		if tc.synchro_type==1 then
+			local f1,min1,max1,f2,min2,max2,sub1,sub2,req1,req2,reqm=table.unpack(t)
+			local e1=Effect.CreateEffect(tc)
+			e1:SetType(EFFECT_TYPE_FIELD)
+			e1:SetCode(EFFECT_SPSUMMON_PROC)
+			e1:SetProperty(EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_IGNORE_IMMUNE)
+			e1:SetRange(LOCATION_GRAVE)
+			e1:SetCondition(Synchro.Condition(f1,min1,max1,f2,min2,max2,sub1,sub2,req1,req2,s.reqm(reqm)))
+			e1:SetTarget(Synchro.Target(f1,min1,max1,f2,min2,max2,sub1,sub2,req1,req2,s.reqm(reqm)))
+			e1:SetOperation(Synchro.Operation)
+			e1:SetValue(SUMMON_TYPE_SYNCHRO)
+			tc:RegisterEffect(e1)
+		elseif tc.synchro_type==2 then
+			local e1=Effect.CreateEffect(tc)
+			e1:SetType(EFFECT_TYPE_FIELD)
+			e1:SetCode(EFFECT_SPSUMMON_PROC)
+			e1:SetProperty(EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_IGNORE_IMMUNE)
+			e1:SetRange(LOCATION_GRAVE)
+			e1:SetCondition(Synchro.Condition(table.unpack(t),s.reqm()))
+			e1:SetTarget(Synchro.Target(table.unpack(t),s.reqm()))
+			e1:SetOperation(Synchro.Operation)
+			e1:SetValue(SUMMON_TYPE_SYNCHRO)
+			tc:RegisterEffect(e1)
+		elseif tc.synchro_type==3 then
+			local e1=Effect.CreateEffect(tc)
+			e1:SetType(EFFECT_TYPE_FIELD)
+			e1:SetCode(EFFECT_SPSUMMON_PROC)
+			e1:SetProperty(EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_IGNORE_IMMUNE)
+			e1:SetRange(LOCATION_GRAVE)
+			e1:SetCondition(Synchro.Condition(table.unpack(t),s.reqm()))
+			e1:SetTarget(Synchro.Target(table.unpack(t),s.reqm()))
+			e1:SetOperation(Synchro.Operation)
+			e1:SetValue(SUMMON_TYPE_SYNCHRO)
+			tc:RegisterEffect(e1)
+		end
+		tc=sg:GetNext()
+	end
+end
+function s.reqm(reqm)
+	return function(g,sc,tp)
+				return g:IsExists(Card.IsHasEffect,1,nil,id) and (not reqm or reqm(g,sc,tp))
+			end
 end

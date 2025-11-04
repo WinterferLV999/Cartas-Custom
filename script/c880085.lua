@@ -39,6 +39,7 @@ function s.initial_effect(c)
 	e4:SetOperation(s.setop)
 	c:RegisterEffect(e4)
 end
+s.listed_names={71645242}
 s.listed_names={CARD_BLACK_ROSE_DRAGON}
 --local no.2
 function s.indvalue(e,re,rp,c)
