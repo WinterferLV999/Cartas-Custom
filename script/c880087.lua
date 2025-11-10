@@ -35,7 +35,6 @@ function s.initial_effect(c)
 	c:RegisterEffect(e3)
 	--graveyard synchro
 	local e4=Effect.CreateEffect(c)
-	e4:SetDescription(aux.Stringid(id,3))
 	e4:SetType(EFFECT_TYPE_SINGLE)
 	e4:SetCode(id)
 	c:RegisterEffect(e4)
@@ -56,7 +55,7 @@ end
 --Local no.2
 function s.spcon(e,tp,eg,ep,ev,re,r,rp)
 	return e:GetHandler():IsLocation(LOCATION_GRAVE) and r==REASON_SYNCHRO
-		and e:GetHandler():GetReasonCard():IsCode(73580471)
+		and e:GetHandler():GetReasonCard():IsSetCard(SET_ROSE)
 end
 function s.negtg(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return Duel.IsExistingMatchingCard(Card.IsNegatable,tp,0,LOCATION_ONFIELD,1,nil) end
@@ -71,16 +70,6 @@ function s.negop(e,tp,eg,ep,ev,re,r,rp)
 		--Negate their effects
 		tc:NegateEffects(c,nil,true)
 	end
-	local c=e:GetHandler()
-	local sync=c:GetReasonCard()
-	--Cannot be destroyed by card effects
-	local e1=Effect.CreateEffect(c)
-	e1:SetDescription(aux.Stringid(id,2))
-	e1:SetType(EFFECT_TYPE_SINGLE)
-	e1:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)
-	e1:SetValue(1)
-	e1:SetReset(RESETS_STANDARD_PHASE_END)
-	sync:RegisterEffect(e1)
 end
 --Local no.3
 function s.con(e,tp,eg,ep,ev,re,r,rp)
@@ -100,6 +89,9 @@ function s.op(e,tp,eg,ep,ev,re,r,rp)
 	sync:RegisterEffect(e1)
 end
 --Local no.4
+function s.regfilter(c)
+	return c.synchro_type and c:IsType(TYPE_SYNCHRO) and c:GetFlagEffect(id+1)==0
+end
 function s.synchk(e,tp,eg,ep,ev,re,r,rp)
 	local sg=Duel.GetMatchingGroup(s.regfilter,tp,0xff,0xff,nil)
 	local tc=sg:GetFirst()
