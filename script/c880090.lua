@@ -43,6 +43,18 @@ function s.initial_effect(c)
 	e3:SetCode(EVENT_LEAVE_FIELD)
 	e3:SetOperation(s.spop)
 	c:RegisterEffect(e3)
+	local e4=Effect.CreateEffect(c)
+	e4:SetType(EFFECT_TYPE_FIELD)
+	e4:SetCode(EFFECT_ADD_SETCODE)
+	e4:SetRange(LOCATION_EXTRA)
+	e4:SetTargetRange(LOCATION_MZONE,0)
+	e4:SetTarget(s.tg)
+	e4:SetValue(0x600)
+	c:RegisterEffect(e4)
+end
+function s.tg(e,c)
+	return c:IsFaceup() and c:IsType(TYPE_TUNER)
+	--return c:GetLevel()<=4
 end
 --Local no.0
 function s.splimit(e,se,sp,st)
