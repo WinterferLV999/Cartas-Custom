@@ -85,7 +85,7 @@ function s.desop(e,tp,eg,ep,ev,re,r,rp)
 	if #g>0 then
 		Duel.Destroy(g,REASON_EFFECT)
 		local g=Duel.GetMatchingGroup(Card.IsSSetable,tp,LOCATION_GRAVE,0,nil)
-		if #g>0 and Duel.SelectYesNo(tp,aux.Stringid(id,0)) then
+		if #g>0 and Duel.SelectYesNo(tp,aux.Stringid(id,1)) then
 			Duel.BreakEffect()
 			Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SET)
 			local sg=g:Select(tp,1,1,nil)

@@ -46,6 +46,8 @@ function s.initial_effect(c)
 	e4:SetCondition(s.descon)
 	c:RegisterEffect(e4)
 end
+s.listed_names={CARD_BLACK_ROSE_DRAGON}
+s.listed_series={SET_ROSE}
 --local no.1
 function s.filter(c)
 	return c:IsFaceup() and c:IsCode(73580471)
@@ -83,6 +85,12 @@ function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
 	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,e:GetHandler(),1,0,0)
 end
 function s.operation(e,tp,eg,ep,ev,re,r,rp)
+	local c=e:GetHandler()
+	if c:IsRelateToEffect(e) then
+		Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)
+	end
+end
+function s.operationn(e,tp,eg,ep,ev,re,r,rp)
 	-- if not Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_MZONE,0,1,nil) then return end
 	local c=e:GetHandler()
 	if c:IsRelateToEffect(e) and Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)>0 then

@@ -24,12 +24,12 @@ function s.initial_effect(c)
 	e2:SetTarget(s.negtg)
 	e2:SetOperation(s.negop)
 	c:RegisterEffect(e2)
-	--Cannot be destroyed
+	--A "Black Rose Dragon" that was Synchro Summoned using this card as material cannot be destroyed by card effects
 	local e3=Effect.CreateEffect(c)
-	e3:SetCategory(CATEGORY_ATKCHANGE)
-	e3:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+	e3:SetDescription(aux.Stringid(id,2))
+	e3:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
+	e3:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)
 	e3:SetCode(EVENT_BE_MATERIAL)
-	e3:SetCountLimit(1,{id,1})
 	e3:SetCondition(s.con)
 	e3:SetOperation(s.op)
 	c:RegisterEffect(e3)
@@ -47,15 +47,16 @@ function s.initial_effect(c)
 	end)
 end
 s.listed_names={CARD_BLACK_ROSE_DRAGON}
+s.listed_series={SET_ROSE}
 --Local no.1
 function s.synlimit(e,c)
 	if not c then return false end
-	return not (c:IsSetCard(SET_ROSE_DRAGON) or c:IsRace(RACE_DRAGON))
+	return not (c:IsSetCard(SET_ROSE) or c:IsRace(RACE_DRAGON))
 end
 --Local no.2
 function s.spcon(e,tp,eg,ep,ev,re,r,rp)
 	return e:GetHandler():IsLocation(LOCATION_GRAVE) and r==REASON_SYNCHRO
-		and e:GetHandler():GetReasonCard():IsSetCard(SET_ROSE)
+		and e:GetHandler():GetReasonCard():IsSetCard(SET_ROSE_DRAGON)
 end
 function s.negtg(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return Duel.IsExistingMatchingCard(Card.IsNegatable,tp,0,LOCATION_ONFIELD,1,nil) end

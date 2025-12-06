@@ -12,55 +12,108 @@ function s.initial_effect(c)
 	e0:SetCode(EFFECT_SPSUMMON_CONDITION)
 	e0:SetValue(s.splimit)
 	c:RegisterEffect(e0)
-	--Send all cards on the field to the GY
+	--Must be Special Summoned (from your Extra Deck) by sending 2 monsters you control with a Level difference of 7 to the GY (1 Tuner and 1 non-Tuner)
 	local e1=Effect.CreateEffect(c)
 	e1:SetDescription(aux.Stringid(id,0))
-	e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
-	e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DELAY)
-	e1:SetCode(EVENT_SPSUMMON_SUCCESS)
-	e1:SetCondition(s.descon)
-	e1:SetOperation(s.erasop)
-	e1:SetLabel(0)
+	e1:SetType(EFFECT_TYPE_FIELD)
+	e1:SetProperty(EFFECT_FLAG_UNCOPYABLE)
+	e1:SetCode(EFFECT_SPSUMMON_PROC)
+	e1:SetRange(LOCATION_EXTRA)
+	e1:SetCondition(s.sprcon)
+	e1:SetTarget(s.sprtg)
+	e1:SetOperation(s.sprop)
+	e1:SetValue(SUMMON_TYPE_SYNCHRO)
 	c:RegisterEffect(e1)
-	--Change ATK to 0 and increase its own ATK
+	--treat 1 "Rose" Tuner you control as a Dark Tuner
 	local e2=Effect.CreateEffect(c)
-	e2:SetDescription(aux.Stringid(id,0))
-	e2:SetCategory(CATEGORY_ATKCHANGE)
-	e2:SetType(EFFECT_TYPE_IGNITION)
-	e2:SetRange(LOCATION_MZONE)
-	e2:SetProperty(EFFECT_FLAG_CARD_TARGET)
-	e2:SetCountLimit(1)
-	e2:SetCost(s.atkcost)
-	e2:SetTarget(s.atktg)
-	e2:SetOperation(s.atkop)
+	e2:SetType(EFFECT_TYPE_FIELD)
+	e2:SetCode(EFFECT_ADD_SETCODE)
+	e2:SetRange(LOCATION_EXTRA)
+	e2:SetTargetRange(LOCATION_MZONE,0)
+	e2:SetTarget(s.tg)
+	e2:SetValue(0x600)
 	c:RegisterEffect(e2)
-	--Special Summon
+	--Send all cards on the field to the GY
 	local e3=Effect.CreateEffect(c)
 	e3:SetDescription(aux.Stringid(id,1))
-	e3:SetCategory(CATEGORY_SPECIAL_SUMMON)
-	e3:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
-	e3:SetProperty(EFFECT_FLAG_DELAY)
-	e3:SetCode(EVENT_LEAVE_FIELD)
-	e3:SetOperation(s.spop)
+	e3:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+	e3:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DELAY)
+	e3:SetCode(EVENT_SPSUMMON_SUCCESS)
+	e3:SetCondition(s.descon)
+	e3:SetOperation(s.erasop)
+	e3:SetLabel(0)
 	c:RegisterEffect(e3)
+	--Change ATK to 0 and increase its own ATK
 	local e4=Effect.CreateEffect(c)
-	e4:SetType(EFFECT_TYPE_FIELD)
-	e4:SetCode(EFFECT_ADD_SETCODE)
-	e4:SetRange(LOCATION_EXTRA)
-	e4:SetTargetRange(LOCATION_MZONE,0)
-	e4:SetTarget(s.tg)
-	e4:SetValue(0x600)
+	e4:SetDescription(aux.Stringid(id,2))
+	e4:SetCategory(CATEGORY_ATKCHANGE)
+	e4:SetType(EFFECT_TYPE_IGNITION)
+	e4:SetRange(LOCATION_MZONE)
+	e4:SetProperty(EFFECT_FLAG_CARD_TARGET)
+	e4:SetCountLimit(1)
+	e4:SetCost(s.atkcost)
+	e4:SetTarget(s.atktg)
+	e4:SetOperation(s.atkop)
 	c:RegisterEffect(e4)
-end
-function s.tg(e,c)
-	return c:IsFaceup() and c:IsType(TYPE_TUNER)
-	--return c:GetLevel()<=4
+	--Special Summon
+	local e5=Effect.CreateEffect(c)
+	e5:SetDescription(aux.Stringid(id,3))
+	e5:SetCategory(CATEGORY_SPECIAL_SUMMON)
+	e5:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
+	e5:SetProperty(EFFECT_FLAG_DELAY)
+	e5:SetCode(EVENT_LEAVE_FIELD)
+	e5:SetOperation(s.spop)
+	c:RegisterEffect(e5)
 end
 --Local no.0
 function s.splimit(e,se,sp,st)
 	return not e:GetHandler():IsLocation(LOCATION_EXTRA) or ((st&SUMMON_TYPE_SYNCHRO)==SUMMON_TYPE_SYNCHRO and not se)
 end
 --Local no.1
+function s.sprfilter(c)
+	return c:IsFaceup() and c:IsAbleToGraveAsCost() and c:HasLevel()
+end
+function s.sprfilter1(c,tp,g,sc)
+	local g=Duel.GetMatchingGroup(s.sprfilter,tp,LOCATION_MZONE,0,nil)
+	return not c:IsType(TYPE_TUNER) and g:IsExists(s.sprfilter2,1,c,tp,c,sc)
+end
+function s.sprfilter2(c,tp,mc,sc)
+	local sg=Group.FromCards(c,mc)
+	return (math.abs((c:GetLevel()-mc:GetLevel()))==7) and c:IsSetCard(0x600) and c:IsSetCard(SET_ROSE) and Duel.GetLocationCountFromEx(tp,tp,sg,sc)>0
+end
+function s.sprcon(e,c)
+	if c==nil then return true end
+	local tp=c:GetControler()
+	local g=Duel.GetMatchingGroup(s.sprfilter,tp,LOCATION_MZONE,0,nil)
+	return g:IsExists(s.sprfilter1,1,nil,tp,g,c)
+end
+function s.sprtg(e,tp,eg,ep,ev,re,r,rp,chk,c)
+	local g=Duel.GetMatchingGroup(s.sprfilter,tp,LOCATION_MZONE,0,nil)
+	local g1=g:Filter(s.sprfilter1,nil,tp,g,c)
+	local mg1=aux.SelectUnselectGroup(g1,e,tp,1,1,nil,1,tp,HINTMSG_TOGRAVE,nil,nil,true)
+	if #mg1>0 then
+		local mc=mg1:GetFirst()
+		local g2=g:Filter(s.sprfilter2,mc,tp,mc,c,mc:GetLevel())
+		local mg2=aux.SelectUnselectGroup(g2,e,tp,1,1,nil,1,tp,HINTMSG_TOGRAVE,nil,nil,true)
+		mg1:Merge(mg2)
+	end
+	if #mg1==2 then
+		mg1:KeepAlive()
+		e:SetLabelObject(mg1)
+		return true
+	end
+	return false
+end
+function s.sprop(e,tp,eg,ep,ev,re,r,rp,c)
+	local g=e:GetLabelObject()
+	if not g then return end
+	Duel.SendtoGrave(g,REASON_COST)
+end
+--Local no.2
+function s.tg(e,c)
+	return c:IsFaceup() and c:IsType(TYPE_TUNER)-- and c:IsSetCard(SET_ROSE)
+end
+--Local no.3
 function s.descon(e,tp,eg,ep,ev,re,r,rp)
 	return e:GetHandler():IsSummonType(SUMMON_TYPE_SPECIAL)
 end
@@ -74,7 +127,7 @@ function s.erasop(e,tp,eg,ep,ev,re,r,rp)
 		Duel.SendtoGrave(g,REASON_EFFECT)
 	end
 end
---Local no.2
+--Local no.4
 function s.costfilter(c)
 	return c:IsRace(RACE_PLANT) and c:IsAbleToRemoveAsCost() and aux.SpElimFilter(c,true)
 end
@@ -112,7 +165,7 @@ function s.atkop(e,tp,eg,ep,ev,re,r,rp)
 		end
 	end
 end
---Local no.3
+--Local no.5
 function s.spop(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler() 
 	if Duel.SelectEffectYesNo(tp,e:GetHandler()) then
