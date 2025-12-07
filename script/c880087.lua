@@ -26,7 +26,6 @@ function s.initial_effect(c)
 	c:RegisterEffect(e2)
 	--A "Black Rose Dragon" that was Synchro Summoned using this card as material cannot be destroyed by card effects
 	local e3=Effect.CreateEffect(c)
-	e3:SetDescription(aux.Stringid(id,2))
 	e3:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
 	e3:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)
 	e3:SetCode(EVENT_BE_MATERIAL)
