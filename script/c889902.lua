@@ -49,9 +49,7 @@ function s.initial_effect(c)
 	e4:SetOperation(s.setop)
 	c:RegisterEffect(e4)
 end
-s.listed_names={CARD_RA}
-s.listed_names={CARD_OBELISK}
-s.listed_names={CARD_SLIFER}
+s.listed_names={CARD_RA,CARD_OBELISK,CARD_SLIFER}
 --Local No.1
 function s.tgcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return Duel.CheckLPCost(tp,1000) end

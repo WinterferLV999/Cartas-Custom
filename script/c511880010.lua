@@ -85,6 +85,14 @@ function s.initial_effect(c)
 	e14:SetCode(EVENT_SPSUMMON_SUCCESS)
 	e14:SetOperation(s.regoppp)
 	c:RegisterEffect(e14)
+	--code
+	local e0=Effect.CreateEffect(c)
+	e0:SetType(EFFECT_TYPE_SINGLE)
+	e0:SetCode(EFFECT_ADD_CODE)
+	e0:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+	e0:SetRange(LOCATION_MZONE|LOCATION_GRAVE)
+	e0:SetValue(CARD_RA)
+	c:RegisterEffect(e0)
 end
 function s.spconnn(e,tp,eg,ep,ev,re,r,rp)
 	return e:GetHandler():GetFlagEffect(id)==0

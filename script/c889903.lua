@@ -57,9 +57,7 @@ function s.initial_effect(c)
 	e5:SetOperation(s.rapop)
 	c:RegisterEffect(e5)
 end
-s.listed_names={CARD_RA}
-s.listed_names={CARD_OBELISK}
-s.listed_names={CARD_SLIFER}
+s.listed_names={CARD_RA,CARD_OBELISK,CARD_SLIFER}
 --Local No.2
 function s.filter(c,e,tp)
 	return c:IsFaceup() and c:IsAttribute(ATTRIBUTE_DIVINE)
