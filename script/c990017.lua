@@ -2,17 +2,26 @@
 local s,id=GetID()
 function s.initial_effect(c)
 	c:EnableReviveLimit()
-	--synchro summon
-	Synchro.AddProcedure(c,nil,2,2,Synchro.NonTuner(nil),1,99)
-	--inmunidad
+	--RED DRAGON ARCHFIEND Monsters you control are unaffected by your opponent's activated monster effects
 	local e1=Effect.CreateEffect(c)
-	e1:SetType(EFFECT_TYPE_SINGLE)
+	e1:SetType(EFFECT_TYPE_FIELD)
 	e1:SetCode(EFFECT_IMMUNE_EFFECT)
-	e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
 	e1:SetRange(LOCATION_MZONE)
+	e1:SetTargetRange(LOCATION_MZONE,0)
 	e1:SetCondition(s.imcon)
-	e1:SetValue(s.efilter)
+	e1:SetTarget(function(_,c) return c:IsSetCard(SET_RED_DRAGON_ARCHFIEND) end)
+	e1:SetValue(s.immval)
 	c:RegisterEffect(e1)
+	--synchro summon
+	--Synchro.AddProcedure(c,nil,2,2,Synchro.NonTuner(nil),1,99)
+	--local e1=Effect.CreateEffect(c)
+	--e1:SetType(EFFECT_TYPE_SINGLE)
+	--e1:SetCode(EFFECT_IMMUNE_EFFECT)
+	--e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+	--e1:SetRange(LOCATION_MZONE)
+	--e1:SetCondition(s.imcon)
+	--e1:SetValue(s.efilter)
+	--c:RegisterEffect(e1)
 	--special summon a "resonator"
 	local e2=Effect.CreateEffect(c)
 	e2:SetDescription(aux.Stringid(id,0))
@@ -42,6 +51,11 @@ end
 function s.efilter(e,te)
 	return te:GetOwnerPlayer()~=e:GetHandlerPlayer()
 	--return te:GetOwner()~=e:GetOwner()
+end
+function s.immval(e,te)
+	if not te:IsActivated() then return false end
+	local trig_p,trig_typ=Duel.GetChainInfo(0,CHAININFO_TRIGGERING_PLAYER,CHAININFO_TRIGGERING_TYPE)
+	return trig_p==1-e:GetHandlerPlayer() and trig_typ&TYPE_MONSTER>0
 end
 --local ni.2
 function s.rfilter(c,e,tp)
