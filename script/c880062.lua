@@ -6,7 +6,7 @@ function s.initial_effect(c)
 	e1:SetType(EFFECT_TYPE_ACTIVATE)
 	e1:SetCode(EVENT_FREE_CHAIN)
 	e1:SetCost(s.cost)
-	e1:SetOperation(s.activate)
+	--e1:SetOperation(s.activate)
 	c:RegisterEffect(e1)
 	--fusattribute
 	local e2=Effect.CreateEffect(c)
@@ -40,6 +40,19 @@ function s.initial_effect(c)
 	--e7:SetTarget(s.destg)
 	e7:SetOperation(s.desop)
 	c:RegisterEffect(e7)
+	--Discard to place predator counters, quick-play effect
+	local e8=Effect.CreateEffect(c)
+	e8:SetDescription(aux.Stringid(id,0))
+	e8:SetCategory(CATEGORY_COUNTER)
+	e8:SetType(EFFECT_TYPE_IGNITION)
+	e8:SetCode(EVENT_FREE_CHAIN)
+	e8:SetRange(LOCATION_SZONE)
+	e8:SetCountLimit(1,id)
+	e8:SetHintTiming(0,TIMINGS_CHECK_MONSTER|TIMING_END_PHASE)
+	e8:SetCost(s.costt)
+	e8:SetTarget(s.target)
+	e8:SetOperation(s.operation)
+	c:RegisterEffect(e8)
 end
 --local no.1
 function s.costfilter(c)
@@ -119,5 +132,30 @@ function s.desop(e,tp,eg,ep,ev,re,r,rp)
 		Duel.Release(sg,REASON_COST)
 	else
 		Duel.Destroy(e:GetHandler(),REASON_RULE)
+	end
+end
+	--Defining cost
+function s.costfilter(c)
+	return c:IsMonster() and c:IsDiscardable() and c:GetOriginalLevel()>0
+end
+	--Cost of discarding a monster card with a level
+function s.costt(e,tp,eg,ep,ev,re,r,rp,chk)
+	if chk==0 then return Duel.IsExistingMatchingCard(s.costfilter,tp,LOCATION_HAND,0,1,nil) end
+	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_DISCARD)
+	local g=Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_HAND,0,1,1,nil)
+	e:SetLabel(g:GetFirst():GetOriginalLevel())
+	Duel.SendtoGrave(g,REASON_COST|REASON_DISCARD)
+end
+	--Activation legality
+function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
+	if chk==0 then return Duel.IsExistingMatchingCard(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil) end
+end
+	--Performing the effect of placing counters
+function s.operation(e,tp,eg,ep,ev,re,r,rp)
+	local g=Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,nil)
+	if #g==0 then return end
+	for i=1,e:GetLabel() do
+		local sg=g:Select(tp,1,1,nil)
+		sg:GetFirst():AddCounter(0x1041,1)
 	end
 end

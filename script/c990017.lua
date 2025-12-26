@@ -2,6 +2,8 @@
 local s,id=GetID()
 function s.initial_effect(c)
 	c:EnableReviveLimit()
+	--synchro summon
+	Synchro.AddProcedure(c,nil,2,2,Synchro.NonTuner(nil),1,99)
 	--RED DRAGON ARCHFIEND Monsters you control are unaffected by your opponent's activated monster effects
 	local e1=Effect.CreateEffect(c)
 	e1:SetType(EFFECT_TYPE_FIELD)
