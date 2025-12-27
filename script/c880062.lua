@@ -135,14 +135,14 @@ function s.desop(e,tp,eg,ep,ev,re,r,rp)
 	end
 end
 	--Defining cost
-function s.costfilter(c)
+function s.costtfilter(c)
 	return c:IsMonster() and c:IsDiscardable() and c:GetOriginalLevel()>0
 end
 	--Cost of discarding a monster card with a level
 function s.costt(e,tp,eg,ep,ev,re,r,rp,chk)
-	if chk==0 then return Duel.IsExistingMatchingCard(s.costfilter,tp,LOCATION_HAND,0,1,nil) end
+	if chk==0 then return Duel.IsExistingMatchingCard(s.costtfilter,tp,LOCATION_HAND,0,1,nil) end
 	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_DISCARD)
-	local g=Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_HAND,0,1,1,nil)
+	local g=Duel.SelectMatchingCard(tp,s.costtfilter,tp,LOCATION_HAND,0,1,1,nil)
 	e:SetLabel(g:GetFirst():GetOriginalLevel())
 	Duel.SendtoGrave(g,REASON_COST|REASON_DISCARD)
 end
