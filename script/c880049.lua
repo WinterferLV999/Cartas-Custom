@@ -43,7 +43,7 @@ function s.predafilter(c,sc,st,tp)
 	return c:GetCounter(0x1041)>0
 end
 function s.matfilter(c,val,scard,sumtype,tp)
-	return c:IsSetCard(SET_PREDAPLANT)
+	return c:IsSetCard(SET_PREDAPLANT) and c:IsType(TYPE_FUSION,sc,st,tp)
 end
 --Local no.2,3
 function s.cfilter(c,seq,p)
