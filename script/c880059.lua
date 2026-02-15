@@ -90,7 +90,8 @@ function s.mfilter1(c,fc,sumtype,tp)
 	return c:IsSetCard(0x10f3,fc,sumtype,tp) and c:IsType(TYPE_FUSION,sc,st,tp)
 end
 function s.mfilter2(c,fc,sumtype,tp)
-	return c:IsRace(RACE_DRAGON,fc,sumtype,tp) and c:IsType(TYPE_FUSION,sc,st,tp)
+	--return c:IsRace(RACE_DRAGON,fc,sumtype,tp) and c:IsType(TYPE_FUSION,sc,st,tp)
+	return c:IsStarvingVenemy() and c:IsType(TYPE_FUSION,sc,st,tp)
 end
 --local no.1-2
 function s.remcon(e,tp,eg,ep,ev,re,r,rp)
