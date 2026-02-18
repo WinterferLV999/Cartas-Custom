@@ -84,7 +84,7 @@ function s.spfilter(c,tp)
 	return c:IsControler(1-tp) and c:IsPreviousLocation(LOCATION_EXTRA)
 end
 function s.costfilter(c,tp,sg,tc)
-	if not (c:IsSetCard({SET_SUPREME_KING_DRAGON,SET_STARVING_VENOM})) and c:IsType(TYPE_FUSION) then return false end
+	if not (c:IsSetCard({SET_SUPREME_KING_DRAGON,SET_STARVING_VENOM}) and c:IsType(TYPE_FUSION)) then return false end
 	sg:AddCard(c)
 	local res
 	if #sg<2 then
@@ -98,7 +98,7 @@ end
 function s.spcon(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
 	return c:CheckFusionMaterial() and eg:IsExists(s.spfilter,1,nil,tp)
-		and Duel.GetLP(tp)~=Duel.GetLP(1-tp)
+		and Duel.GetLP(tp)<=Duel.GetLP(1-tp)
 		and Duel.CheckReleaseGroup(tp,s.costfilter,1,nil,tp,Group.CreateGroup(),c) and c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_SPECIAL,tp,false,true)
 end
 function s.spop(e,tp,eg,ep,ev,re,r,rp)
@@ -203,7 +203,7 @@ function s.spfilter2(c,e,tp)
 end
 function s.spfilter22(c,e,tp)
 	if c:IsLocation(LOCATION_EXTRA) and Duel.GetLocationCountFromEx(tp,tp,nil,c)==0 then return false end
-	return c:IsSetCard(SET_STARVING_VENOM) or c:IsCode(13331639) and c:IsMonster() and c:IsCanBeSpecialSummoned(e,0,tp,true,false)
+	return c:IsSetCard(SET_STARVING_VENOM) or c:IsCode(13331639) and c:IsMonster() and c:IsCanBeSpecialSummoned(e,0,tp,true,true)
 end
 function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk)
 	local loc=LOCATION_EXTRA
@@ -218,6 +218,6 @@ function s.spop2(e,tp,eg,ep,ev,re,r,rp)
 	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
 	local g=Duel.SelectMatchingCard(tp,s.spfilter22,tp,loc,0,1,1,nil,e,tp)
 	if #g>0 then
-		Duel.SpecialSummon(g,0,tp,tp,true,false,POS_FACEUP)
+		Duel.SpecialSummon(g,0,tp,tp,true,true,POS_FACEUP)
 	end
 end

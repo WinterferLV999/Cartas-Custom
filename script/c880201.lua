@@ -65,7 +65,7 @@ function s.initial_effect(c)
 	end)
 	--Place itself into pendulum zone
 	local e5=Effect.CreateEffect(c)
-	e5:SetDescription(aux.Stringid(90036274,0))
+	e5:SetDescription(aux.Stringid(90036274,2))
 	e5:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DELAY+EFFECT_FLAG_CARD_TARGET)
 	e5:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_REMOVE+CATEGORY_DAMAGE)
 	e5:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
