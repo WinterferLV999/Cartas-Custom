@@ -12,17 +12,18 @@ function s.initial_effect(c)
 	e0:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)
 	e0:SetValue(aux.NOT(aux.TargetBoolFunction(Card.IsSetCard,0x48)))
 	c:RegisterEffect(e0)
-	--xyz summon no.2
+	--Special summon
 	local e1=Effect.CreateEffect(c)
-	e1:SetType(EFFECT_TYPE_FIELD)
-	e1:SetCode(EFFECT_SPSUMMON_PROC)
-	e1:SetProperty(EFFECT_FLAG_UNCOPYABLE)
-	e1:SetRange(LOCATION_EXTRA)
-	e1:SetCondition(s.xyzcon)
-	e1:SetTarget(s.xyztg)
-	e1:SetOperation(s.xyzop)
-	e1:SetValue(SUMMON_TYPE_XYZ)
-	c:RegisterEffect(e1)
+    e1:SetDescription(aux.Stringid(id,0))
+    e1:SetCategory(CATEGORY_SPECIAL_SUMMON)
+    e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_QUICK_O)
+    e1:SetCode(EVENT_CHAINING)
+    e1:SetRange(LOCATION_EXTRA)
+    e1:SetCountLimit(1)
+    e1:SetCondition(s.condition)
+    e1:SetTarget(s.sptg)
+    e1:SetOperation(s.spop)
+    c:RegisterEffect(e1)
 	--cannot destroyed
 	local e2=Effect.CreateEffect(c)
 	e2:SetType(EFFECT_TYPE_SINGLE)
@@ -116,37 +117,68 @@ function s.regop(e,tp,eg,ep,ev,re,r,rp)
 	table.insert(BPResolvedEffects[cid],re:GetHandler():GetFieldID())
 end
 --Local no.1
-function s.ovfilter(c,tp,xyz)
-	return c:IsFaceup() and c:IsCode(88177324) and c:GetEquipCount()>=1
-		and Duel.GetLocationCountFromEx(tp,tp,c,xyz)>0
+
+-- Filtro para el Galaxy-Eyes que será el material
+function s.cfilter(c,tp,e)
+    return c:IsFaceup() and c:IsControler(tp) and c:IsType(TYPE_XYZ) and c:IsSetCard(SET_GALAXY_EYES) 
+        and c:GetEquipCount()>=1 and c:IsCanBeXyzMaterial(e:GetHandler())
 end
-function s.xyzcon(e,c)
-	if c==nil then return true end
-	if og then return false end
-	local tp=c:GetControler()
-	local mg=Duel.GetFieldGroup(tp,LOCATION_MZONE,0)
-	local mustg=aux.GetMustBeMaterialGroup(tp,Group.CreateGroup(),tp,c,mg,REASON_XYZ)
-	if #mustg>0 or (min and min>1) then return false end
-	return Duel.CheckReleaseGroup(c:GetControler(),s.ovfilter,1,false,1,true,c,c:GetControler(),nil,false,nil,tp,c)
+
+function s.condition(e,tp,eg,ep,ev,re,r,rp)
+    local ex,tg,tc=Duel.GetOperationInfo(ev,CATEGORY_DESTROY)
+    if not ex then return false end
+    -- Pasamos "e" al final para que el filtro lo reconozca
+    return Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_MZONE,0,1,nil,tp,e)
 end
-function s.xyztg(e,tp,eg,ep,ev,re,r,rp,c)
-	local g=Duel.SelectReleaseGroup(tp,s.ovfilter,1,1,false,true,true,c,nil,nil,false,nil,tp,c)
-	if g then
-		g:KeepAlive()
-		e:SetLabelObject(g)
-	return true
+
+function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk)
+    local c=e:GetHandler()
+    if chk==0 then 
+        -- También pasamos "e" aquí
+        return Duel.GetLocationCountFromEx(tp,tp,nil,c)>0 
+            and Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_MZONE,0,1,nil,tp,e)
+            and c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_XYZ,tp,false,false) 
+    end
+    Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,tp,LOCATION_EXTRA)
+end
+
+function s.spop(e,tp,eg,ep,ev,re,r,rp)
+	local c=e:GetHandler()
+	if not c:IsRelateToEffect(e) then return end
+
+	-- 1. Seleccionamos al Galaxy-Eyes que servirá de base
+	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_XMATERIAL)
+	local g=Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_MZONE,0,1,1,nil,tp,e)
+	local tc=g:GetFirst()
+	
+	if tc and not tc:IsImmuneToEffect(e) then
+		-- 2. Capturamos materiales previos y EQUIPOS
+		local mg=tc:GetOverlayGroup()
+		local eqg=tc:GetEquipGroup():Filter(Card.IsType,nil,TYPE_EQUIP)
+		mg:KeepAlive()
+		eqg:KeepAlive()
+
+		-- 3. UNIMOS al Monstruo + Equipos en un solo grupo de materiales
+		local materials=Group.FromCards(tc)
+		materials:Merge(eqg)
+		
+		-- Registrar el grupo completo como materiales de esta carta
+		c:SetMaterial(materials)
+
+		-- 4. Ejecutar la INVOCACIÓN XYZ
+		-- Primero movemos el monstruo y los equipos debajo de la carta (Overlay)
+		Duel.Overlay(c,materials)
+		
+		if Duel.SpecialSummon(c,SUMMON_TYPE_XYZ,tp,tp,false,false,POS_FACEUP)~=0 then
+			-- 5. Acoplar los materiales antiguos que ya tenía el Galaxy-Eyes
+			if #mg>0 then 
+				Duel.Overlay(c,mg) 
+			end
+			
+			c:CompleteProcedure()
+		end
 	end
-	return false
 end
-function s.xyzop(e,tp,eg,ep,ev,re,r,rp,c)
-	local g=e:GetLabelObject()
-	if not g then return end
-	local eqg=g:GetFirst():GetEquipGroup()
-	e:GetHandler():SetMaterial(eqg)
-	Duel.Overlay(e:GetHandler(),eqg)
-	Duel.Overlay(c,g)
-	g:DeleteGroup()
- end
 --Local no.2,3,7
 function s.indcon(e)
 	return e:GetHandler():GetOverlayGroup():IsExists(Card.IsCode,1,nil,88177324)

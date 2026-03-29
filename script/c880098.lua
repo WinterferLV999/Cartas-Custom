@@ -53,7 +53,7 @@ function s.filter1(c,e,tp)
 	local pg=aux.GetMustBeMaterialGroup(tp,Group.FromCards(c),tp,nil,nil,REASON_XYZ)
 	return (#pg<=0 or (#pg==1 and pg:IsContains(c))) and c:IsCode(93717133) and not c:IsSetCard(SET_NUMBER_C)
 		and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
-		and (aux.CheckSummonGate(tp,2) or c:IsLocation(LOCATION_MZONE|LOCATION_GRAVE|LOCATION_HAND))
+		and (aux.CheckSummonGate(tp,2) or c:IsLocation(LOCATION_MZONE|LOCATION_GRAVE|LOCATION_HAND|LOCATION_REMOVED))
 		and Duel.IsExistingMatchingCard(s.filter2,tp,LOCATION_EXTRA,0,1,nil,e,tp,c,no,pg)
 end
 function s.filter2(c,e,tp,mc,no,pg)

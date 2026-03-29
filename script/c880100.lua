@@ -100,38 +100,40 @@ function s.filter3(c)
 end
 function s.operation(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
-	local tg=Duel.GetMatchingGroup(s.filter3,tp,LOCATION_MZONE,LOCATION_MZONE,c)
-	if #tg>0 then
-	--if #tg>0 and Duel.SelectEffectYesNo(tp,c) then
-		--Duel.Hint(HINT_CARD,0,id)
-		local atk=#tg*0
-		for tc in aux.Next(tg) do
-		    local e2=Effect.CreateEffect(c)
-		    e2:SetType(EFFECT_TYPE_SINGLE)
-		    e2:SetCode(EFFECT_DISABLE)
-		    e2:SetReset(RESET_EVENT+RESETS_STANDARD)
-		    tc:RegisterEffect(e2)
-		    local e3=Effect.CreateEffect(c)
-		    e3:SetType(EFFECT_TYPE_SINGLE)
-		    e3:SetCode(EFFECT_DISABLE_EFFECT)
-		    e3:SetReset(RESET_EVENT+RESETS_STANDARD)
-		    tc:RegisterEffect(e3)
-		end
+	if not c:IsRelateToEffect(e) or c:IsFacedown() then return end
+
+	-- 1. NEGAR: Todas las cartas boca arriba del oponente
+	local g=Duel.GetMatchingGroup(Card.IsNegatable,tp,0,LOCATION_ONFIELD,nil)
+	for tc in aux.Next(g) do
 		local e1=Effect.CreateEffect(c)
-		e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
 		e1:SetType(EFFECT_TYPE_SINGLE)
-		e1:SetCode(EFFECT_UPDATE_ATTACK)
-		e1:SetValue(atk)
-		e1:SetReset(RESET_EVENT+RESETS_STANDARD-RESET_TOFIELD)
-		c:RegisterEffect(e1)
+		e1:SetCode(EFFECT_DISABLE)
+		e1:SetReset(RESET_EVENT+RESETS_STANDARD+RESET_PHASE+PHASE_END)
+		tc:RegisterEffect(e1)
 		local e2=Effect.CreateEffect(c)
 		e2:SetType(EFFECT_TYPE_SINGLE)
-		e2:SetCode(EFFECT_ATTACK_ALL)
-		e2:SetValue(1)
+		e2:SetCode(EFFECT_DISABLE_EFFECT)
 		e2:SetReset(RESET_EVENT+RESETS_STANDARD+RESET_PHASE+PHASE_END)
-		c:RegisterEffect(e2)
+		tc:RegisterEffect(e2)
 	end
-	Duel.Readjust()
+
+	-- 2. ABSORBER: Todas las unidades overlay de otros Xyz en el campo
+	local xyz_g=Duel.GetMatchingGroup(Card.IsType,tp,LOCATION_MZONE,LOCATION_MZONE,c,TYPE_XYZ)
+	local og=Group.CreateGroup()
+	for xyz_c in aux.Next(xyz_g) do
+		og:Merge(xyz_c:GetOverlayGroup())
+	end
+	if #og>0 then
+		Duel.Overlay(c,og)
+	end
+
+	-- 3. MULTI-ATAQUE: Puede atacar a todos los monstruos este turno
+	local e3=Effect.CreateEffect(c)
+	e3:SetType(EFFECT_TYPE_SINGLE)
+	e3:SetCode(EFFECT_ATTACK_ALL)
+	e3:SetValue(1)
+	e3:SetReset(RESET_EVENT+RESETS_STANDARD+RESET_PHASE+PHASE_END)
+	c:RegisterEffect(e3)
 end
 --local no.8
 function s.negcon(e,tp,eg,ep,ev,re,r,rp)
