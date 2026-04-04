@@ -60,18 +60,17 @@ function s.initial_effect(c)
 	e11:SetCode(EFFECT_SUMMON_COST)
 	e11:SetOperation(function() e10:SetLabel(1) end)
 	c:RegisterEffect(e11)
-	--Point-to-Point Transfer
-	local e12=Effect.CreateEffect(c)
-	e12:SetDescription(aux.Stringid(id,0))
-	e12:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)
-	e12:SetType(EFFECT_TYPE_IGNITION)
+    -- Point-to-Point Transfer (MODO: Sin Cadena / Continuo)
+    local e12=Effect.CreateEffect(c)
+    e12:SetDescription(aux.Stringid(id,0))
+    e12:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+    e12:SetCode(EVENT_FREE_CHAIN)
 	e12:SetProperty(EFFECT_FLAG_NO_TURN_RESET)
 	e12:SetCountLimit(1,0,EFFECT_COUNT_CODE_SINGLE)
-	e12:SetRange(LOCATION_MZONE)
-	e12:SetCondition(s.spconnn)
-	e12:SetCost(s.payatkcost)
-	e12:SetOperation(s.payatkop)
-	c:RegisterEffect(e12)
+    e12:SetRange(LOCATION_MZONE)
+    e12:SetCondition(s.payatkcon) -- Condición de ventana libre
+    e12:SetOperation(s.payatkop_nochain) -- Operación directa
+    c:RegisterEffect(e12)
 	--Resurrection
 	local e13=Effect.CreateEffect(c)
 	e13:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
@@ -215,6 +214,19 @@ function s.immortal(e,tp,eg,ep,ev,re,r,rp,chk)
 end
 -------------------------------------------
 --One Turn Kill
+function s.payatkcon(e,tp,eg,ep,ev,re,r,rp)
+	local c=e:GetHandler()
+	local ph=Duel.GetCurrentPhase()
+	
+	-- RESTRICCIÓN: No puede activarse si fue Invocado Especialmente este turno
+	local sp_check = not (c:IsSummonType(SUMMON_TYPE_SPECIAL) and c:GetTurnID()==Duel.GetTurnCount())
+	
+	return Duel.GetTurnPlayer()==tp 
+		and (ph==PHASE_MAIN1 or ph==PHASE_MAIN2)
+		and Duel.GetLP(tp)>1 
+		and c:GetFlagEffect(id+500)==0 
+		and sp_check -- Aplicamos el filtro de Invocación Especial
+end
 function s.payatkcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	local lpCost=Duel.GetLP(tp)-1
 	if chk==0 then return lpCost>0 and Duel.CheckLPCost(tp,lpCost) end
@@ -401,6 +413,117 @@ function s.dirop(e,tp,eg,ep,ev,re,r,rp)
 		e1:SetCondition(s.dfcon)
 		e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_BATTLE)
 		c:RegisterEffect(e1)
+	end
+end
+-- 2. Nueva Operación (Manual y sin cadena)
+function s.payatkop_nochain(e,tp,eg,ep,ev,re,r,rp)
+	local c=e:GetHandler()
+	-- Pregunta manual al jugador
+	if Duel.SelectYesNo(tp,aux.Stringid(id,0)) then
+		-- EFECTO VISUAL (Brillo de carta)
+		Duel.Hint(HINT_CARD,0,id)
+		
+		-- Marcar como usado (Equivalente al CountLimit de la Skill)
+		c:RegisterFlagEffect(id+500,RESET_EVENT+RESETS_STANDARD+RESET_PHASE+PHASE_END,0,1)
+		
+		-- Pagar LP (Costo manual dentro de la operación)
+		local lpCost=Duel.GetLP(tp)-1
+		Duel.PayLPCost(tp,lpCost)
+		
+		-- APLICAR TODA LA LÓGICA ORIGINAL (ATK/DEF/FUSION/ETC)
+		if c:IsFaceup() then
+			-- Aumento de estadísticas
+			local e1=Effect.CreateEffect(c)
+			e1:SetType(EFFECT_TYPE_SINGLE)
+			e1:SetCode(EFFECT_SET_BASE_ATTACK)
+			e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+			e1:SetRange(LOCATION_MZONE)
+			e1:SetCondition(s.dfcon)
+			e1:SetValue(c:GetBaseAttack()+lpCost)
+			e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_END)
+			c:RegisterEffect(e1)
+			
+			local e2=e1:Clone()
+			e2:SetCode(EFFECT_SET_BASE_DEFENSE)
+			e2:SetValue(c:GetBaseDefense()+lpCost)
+			c:RegisterEffect(e2)
+			
+			-- Tratado como Fusión
+			local e3=Effect.CreateEffect(c)
+			e3:SetType(EFFECT_TYPE_SINGLE)
+			e3:SetCode(EFFECT_ADD_TYPE)
+			e3:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
+			e3:SetCondition(s.dfcon)
+			e3:SetValue(TYPE_FUSION)
+			e3:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_END)
+			c:RegisterEffect(e3)
+		--Tribute for stats
+		local e4=Effect.CreateEffect(c)
+		e4:SetDescription(aux.Stringid(id,2))
+		e4:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)
+		e4:SetType(EFFECT_TYPE_QUICK_O)
+		e4:SetCode(EVENT_FREE_CHAIN)
+		e4:SetRange(LOCATION_MZONE)
+		e4:SetCondition(s.dfcon)
+		e4:SetCost(s.tatkcost)
+		e4:SetOperation(s.tatkop)
+		e4:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_END)
+		c:RegisterEffect(e4)
+		--LP is stats
+		local e5=Effect.CreateEffect(c)
+		e5:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+		e5:SetCode(EVENT_RECOVER)
+		e5:SetRange(LOCATION_MZONE)
+		e5:SetCondition(s.dfcon)
+		e5:SetOperation(s.atkop1)
+		e5:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_END)
+		c:RegisterEffect(e5)
+		local e6=Effect.CreateEffect(c)
+		e6:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+		e6:SetCode(EVENT_CHAIN_END)
+		e6:SetRange(LOCATION_MZONE)
+		e6:SetCondition(s.dfcon)
+		e6:SetOperation(s.atkop2)
+		e6:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_END)
+		c:RegisterEffect(e6)
+		--Attack all
+		local e7=Effect.CreateEffect(c)
+		e7:SetType(EFFECT_TYPE_FIELD)
+		e7:SetRange(LOCATION_MZONE)
+		e7:SetTargetRange(0,LOCATION_MZONE)
+		e7:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE+EFFECT_FLAG_CANNOT_DISABLE)
+		e7:SetCode(EFFECT_CANNOT_BE_BATTLE_TARGET)
+		e7:SetCondition(s.dfcon)
+		e7:SetTarget(function(_e,_c) return _c:GetFlagEffect(id+100)>0 end)
+		e7:SetValue(function(_e,_c) return _c==_e:GetHandler() end)
+		e7:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_END)
+		c:RegisterEffect(e7)
+		local e8=Effect.CreateEffect(c)
+		e8:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
+		e8:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
+		e8:SetCode(EVENT_DAMAGE_STEP_END)
+		e8:SetCondition(s.dfcon)
+		e8:SetOperation(s.dirop)
+		e8:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_END)
+		c:RegisterEffect(e8)
+		local e9=Effect.CreateEffect(c)
+		e9:SetType(EFFECT_TYPE_SINGLE)
+		e9:SetCode(EFFECT_EXTRA_ATTACK)
+		e9:SetValue(9999)
+		e9:SetCondition(s.dfcon)
+		e9:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_END)
+		c:RegisterEffect(e9)
+		local e10=Effect.CreateEffect(c)
+		e10:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
+		e10:SetCode(EVENT_DAMAGE_STEP_END)
+		e10:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
+		e10:SetCondition(s.dfcon)
+		e10:SetOperation(s.unop)
+		e10:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_END)
+		c:RegisterEffect(e10)
+			
+			Debug.Message("Transferencia completada: LP drenados a Ra.")
+		end
 	end
 end
 -------------------------------------------
