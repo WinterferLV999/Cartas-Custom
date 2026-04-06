@@ -57,10 +57,10 @@ function s.sumlimit(e,c,sump,sumtype,sumpos,targetp,se)
 	return e:GetHandler()~=se:GetHandler()
 end
 function s.spfilter(c,e,tp)
-	return c:IsCode(CARD_RA) and c:IsCanBeSpecialSummoned(e,0,tp,true,false)
+	return c:IsCode(CARD_RA,10000080,10000090) and c:IsCanBeSpecialSummoned(e,0,tp,true,false)
 end
 function s.filter(c,e,tp)
-	return c:IsCode(CARD_RA,CARD_OBELISK,CARD_SLIFER) and c:IsCanBeSpecialSummoned(e,0,tp,true,false)
+	return c:IsCode(CARD_RA,CARD_OBELISK,CARD_SLIFER,10000080,10000090) and c:IsCanBeSpecialSummoned(e,0,tp,true,false)
 end
 function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return Duel.GetLocationCount(tp,LOCATION_MZONE)>0

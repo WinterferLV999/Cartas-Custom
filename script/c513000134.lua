@@ -110,6 +110,19 @@ function s.leaveChk(c,category)
 	return ex and tg~=nil and tg:IsContains(c)
 end
 --Local No.5,6
+
+function s.eefilter(e,te)
+	local c=e:GetHandler()
+	local tc=te:GetOwner()
+	-- Inmune a Trampas, Magias y Monstruos (No Divinos) que muevan del campo
+	local origin = (te:IsTrapEffect() or te:IsSpellEffect() or (te:IsMonsterEffect() and tc~=c and not tc:IsOriginalAttribute(ATTRIBUTE_DIVINE)))
+	
+	return origin and (
+		(c:GetDestination()>0 and c:GetReasonEffect()==te)
+		or (s.leaveChk(c,CATEGORY_TOHAND) or s.leaveChk(c,CATEGORY_DESTROY) or s.leaveChk(c,CATEGORY_REMOVE)
+		or s.leaveChk(c,CATEGORY_TODECK) or s.leaveChk(c,CATEGORY_RELEASE) or s.leaveChk(c,CATEGORY_TOGRAVE))
+	)
+end
 function s.efilter(e,te,c)
 	local c=e:GetOwner()
 	local tc=te:GetOwner()

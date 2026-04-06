@@ -178,7 +178,7 @@ function s.atklimit(e,c)
 end
 --Local No.5
 function s.racon(e,tp,eg,ep,ev,re,r,rp)
-	return Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsOriginalCodeRule,CARD_RA),e:GetHandlerPlayer(),LOCATION_MZONE,0,1,nil)
+	return Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsOriginalCodeRule,CARD_RA,10000080,10000090),e:GetHandlerPlayer(),LOCATION_MZONE,0,1,nil)
 end
 function s.rafilter(c,tid)
 	return c:IsHasEffect(90162951) and c:GetFieldID()>tid
