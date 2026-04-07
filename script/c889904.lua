@@ -1,4 +1,3 @@
-
 local s,id=GetID()
 function s.initial_effect(c)
 	--Activate
@@ -25,10 +24,20 @@ function s.initial_effect(c)
 end
 s.listed_names={CARD_RA,CARD_OBELISK,CARD_SLIFER}
 --Local No.1
+-- Función auxiliar para permitir Bestias Divinas
+function s.divinefilter(e,c)
+	return not c:IsRace(RACE_DIVINE)
+end
 function s.cost(e,tp,eg,ep,ev,re,r,rp,chk)
+	-- Verificación: No haber invocado nada que NO sea Bestia Divina antes
 	if chk==0 then return Duel.GetActivityCount(tp,ACTIVITY_SUMMON)==0
-		and Duel.GetActivityCount(tp,ACTIVITY_FLIPSUMMON)==0 and Duel.GetActivityCount(tp,ACTIVITY_SPSUMMON)==0 end
-	local e1=Effect.CreateEffect(e:GetHandler())
+		and Duel.GetActivityCount(tp,ACTIVITY_FLIPSUMMON)==0 
+		and Duel.GetActivityCount(tp,ACTIVITY_SPSUMMON)==0 end
+	
+	local c=e:GetHandler()
+	
+	-- 1. Restricción de Invocación Especial: Solo permite Bestias Divinas
+	local e1=Effect.CreateEffect(c)
 	e1:SetType(EFFECT_TYPE_FIELD)
 	e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_OATH)
 	e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)
@@ -36,38 +45,52 @@ function s.cost(e,tp,eg,ep,ev,re,r,rp,chk)
 	e1:SetTargetRange(1,0)
 	e1:SetTarget(s.sumlimit)
 	Duel.RegisterEffect(e1,tp)
-	local e2=Effect.CreateEffect(e:GetHandler())
+	
+	-- 2. Restricción de Invocación Normal: Solo permite Bestias Divinas
+	local e2=Effect.CreateEffect(c)
 	e2:SetType(EFFECT_TYPE_FIELD)
 	e2:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_OATH)
 	e2:SetCode(EFFECT_CANNOT_SUMMON)
 	e2:SetReset(RESET_PHASE|PHASE_END)
 	e2:SetTargetRange(1,0)
+	e2:SetTarget(s.divinefilter) -- Aquí aplicamos la excepción
 	Duel.RegisterEffect(e2,tp)
+	
+	-- 3. Restricción de Volteo: Solo permite Bestias Divinas
 	local e3=e2:Clone()
 	e3:SetCode(EFFECT_CANNOT_FLIP_SUMMON)
 	Duel.RegisterEffect(e3,tp)
-	local e4=Effect.CreateEffect(e:GetHandler())
+	
+	-- Indicador visual del estado
+	local e4=Effect.CreateEffect(c)
 	e4:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_CLIENT_HINT)
 	e4:SetDescription(aux.Stringid(id,1))
 	e4:SetReset(RESET_PHASE|PHASE_END)
 	e4:SetTargetRange(1,0)
 	Duel.RegisterEffect(e4,tp)
 end
+
+-- Lógica para la excepción de Invocación Especial
 function s.sumlimit(e,c,sump,sumtype,sumpos,targetp,se)
+	-- Permite si el monstruo es Bestia Divina O si es invocado por este efecto
+	return not c:IsRace(RACE_DIVINE) and e:GetHandler()~=se:GetHandler()
+end
+function s.ssumlimit(e,c,sump,sumtype,sumpos,targetp,se)
 	return e:GetHandler()~=se:GetHandler()
 end
 function s.spfilter(c,e,tp)
-	return c:IsCode(CARD_RA,10000080,10000090) and c:IsCanBeSpecialSummoned(e,0,tp,true,false)
+	return c:IsCode(CARD_RA,CARD_OBELISK,CARD_SLIFER,10000080,10000090)
+	--return c:IsCode(CARD_RA,10000080,10000090) and c:IsCanBeSpecialSummoned(e,0,tp,true,false)
 end
 function s.filter(c,e,tp)
 	return c:IsCode(CARD_RA,CARD_OBELISK,CARD_SLIFER,10000080,10000090) and c:IsCanBeSpecialSummoned(e,0,tp,true,false)
 end
 function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
-		and Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_GRAVE|LOCATION_REMOVED,0,1,nil,e,tp)
-	end
+		and Duel.IsExistingMatchingCard(s.spfilter,tp,LOCATION_GRAVE|LOCATION_REMOVED,0,1,nil) end
 	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE|LOCATION_REMOVED)
-	--Neither player can activate cards or effects in response this card's activation
+	
+	-- Protección de cadena (opcional, para que no puedan responder)
 	if e:IsHasType(EFFECT_TYPE_ACTIVATE) then
 		Duel.SetChainLimit(aux.FALSE)
 	end
@@ -75,20 +98,17 @@ end
 function s.activate(e,tp,eg,ep,ev,re,r,rp)
 	if Duel.GetLocationCount(tp,LOCATION_MZONE)<=0 then return end
 	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
-	local g=Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_GRAVE|LOCATION_REMOVED,0,1,1,nil,e,tp)
-	if #g>0 then
-		if Duel.GetCurrentChain()==1 then
-			--Neither player can activate cards or effects when it is summoned
-			local e1=Effect.CreateEffect(e:GetHandler())
-			e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
-			e1:SetCode(EVENT_CHAIN_END)
-			e1:SetCountLimit(1)
-			e1:SetOperation(function() Duel.SetChainLimitTillChainEnd(aux.FALSE) end)
-			e1:SetReset(RESET_PHASE|PHASE_END)
-			Duel.RegisterEffect(e1,tp)
+	local g=Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_GRAVE|LOCATION_REMOVED,0,1,1,nil)
+	local tc=g:GetFirst()
+	
+	if tc then
+		-- El quinto parámetro 'true' ignora las condiciones de invocación (Nomi/Semi-Nomi)
+		if Duel.SpecialSummonStep(tc,0,tp,tp,true,true,POS_FACEUP) then
+			-- Si quieres añadir efectos adicionales al monstruo al ser invocado, hazlo aquí
+			Duel.SpecialSummonComplete()
+			
+			Duel.SkipPhase(Duel.GetTurnPlayer(),PHASE_END,RESET_PHASE+PHASE_END,1)
 		end
-		Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)
-		Duel.SkipPhase(Duel.GetTurnPlayer(),PHASE_END,RESET_PHASE+PHASE_END,1)
 	end
 end
 --Local No.2
