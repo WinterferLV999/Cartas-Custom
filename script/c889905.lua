@@ -20,7 +20,7 @@ function s.initial_effect(c)
 	e2:SetOperation(s.thop)
 	c:RegisterEffect(e2)
 end
-
+s.listed_names={CARD_RA}
 -- Condición: Debe ser tu Battle Phase
 function s.condition(e,tp,eg,ep,ev,re,r,rp)
     return Duel.IsBattlePhase() and Duel.IsTurnPlayer(tp)

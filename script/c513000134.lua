@@ -32,6 +32,7 @@ function s.initial_effect(c)
 	--Last for 1 turn & block
 	local e7=Effect.CreateEffect(c)
 	e7:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+    e7:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_IGNORE_IMMUNE)
 	e7:SetCode(EVENT_TURN_END)
 	e7:SetRange(LOCATION_MZONE)
 	e7:SetOperation(s.stgop)
