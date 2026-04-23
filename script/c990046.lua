@@ -20,13 +20,6 @@ function s.initial_effect(c)
 	e2:SetTarget(Fusion.SummonEffTG(table.unpack(params)))
 	e2:SetOperation(Fusion.SummonEffOP(table.unpack(params)))
 	c:RegisterEffect(e2)
-	--fusion substitute
-	local e3=Effect.CreateEffect(c)
-	e3:SetType(EFFECT_TYPE_SINGLE)
-	e3:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
-	e3:SetCode(511002961)
-	e3:SetRange(LOCATION_ONFIELD)
-	c:RegisterEffect(e3)
 end
 --local no.1
 function s.spconfilter(c)
