@@ -83,38 +83,48 @@ function s.negop(e,tp,eg,ep,ev,re,r,rp)
     if Duel.NegateActivation(ev) and c:IsRelateToEffect(e) then
         local g=Group.FromCards(c)
         if tc:IsRelateToEffect(re) then g:AddCard(tc) end
+        
         if Duel.Remove(g,POS_FACEUP,REASON_EFFECT)>0 then
-            -- REGISTRAMOS UN EFECTO EN EL DUELO (FIELD) QUE BUSQUE EL REGRESO
+            -- Creamos un grupo persistente para guardar las referencias
+            local sg=Group.FromCards(c,tc)
+            sg:KeepAlive()
+            
+            -- Registro del efecto de retorno en el duelo
             local e2=Effect.CreateEffect(c)
             e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
             e2:SetCode(EVENT_SPSUMMON_SUCCESS)
-            -- Guardamos la referencia de la magia desterrada
-            e2:SetLabelObject(tc)
+            e2:SetLabelObject(sg)
             e2:SetCondition(s.xyzcon)
             e2:SetOperation(s.xyzop)
+            -- Reset por seguridad: si no regresan en 2 turnos, el efecto se borra
+            e2:SetReset(RESET_PHASE+PHASE_END,2) 
             Duel.RegisterEffect(e2,tp)
-            -- Ponemos un flag a la magia por seguridad
-            tc:RegisterFlagEffect(id,RESET_EVENT+RESETS_STANDARD,0,1)
         end
     end
 end
 
--- Lógica de reconexión (Se dispara cuando ALGO es invocado)
+-- Lógica de reconexión (Usa referencias directas, no nombres)
 function s.xyzcon(e,tp,eg,ep,ev,re,r,rp)
-    local tc=e:GetLabelObject()
-    -- Solo actúa si la carta que se invocó es nuestro monstruo (id)
-    return eg:IsExists(Card.IsCode,1,nil,id) and tc:IsLocation(LOCATION_REMOVED)
+    local sg=e:GetLabelObject()
+    local c=sg:GetFirst()  -- El monstruo
+    local tc=sg:GetNext() -- La magia
+    
+    -- Verifica si "esta carta específica" (c) está en el grupo de invocados
+    return eg:IsContains(c) and tc and tc:IsLocation(LOCATION_REMOVED)
 end
 
 function s.xyzop(e,tp,eg,ep,ev,re,r,rp)
-    -- Buscamos a nuestro monstruo en el grupo de los recién invocados
-    local c=eg:Filter(Card.IsCode,nil,id):GetFirst()
-    local tc=e:GetLabelObject()
+    local sg=e:GetLabelObject()
+    local c=sg:GetFirst()
+    local tc=sg:GetNext()
+    
     if c and tc and tc:IsLocation(LOCATION_REMOVED) then
         Duel.Overlay(c,tc)
-        -- Importante: El efecto de vigilancia se auto-destruye tras cumplir su misión
-        e:Reset()
     end
+    
+    -- Limpieza de memoria (IMPORTANTE)
+    sg:DeleteGroup()
+    e:Reset()
 end
 function s.atcon(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
