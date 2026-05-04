@@ -51,7 +51,7 @@ end
 --local no.2
 function s.cfilter(c,ft)
 	-- No puede ser Ra (ID: 10000010)
-	local is_not_ra = not c:IsCode(10000010)
+	local is_not_ra = not (c:IsCode(CARD_RA,10000080,10000090) or c:IsCode(511000237))
 	return is_not_ra and c:IsAbleToHandAsCost() 
 		and (ft>0 or (c:IsLocation(LOCATION_MZONE) and c:GetSequence()<5))
 end
