@@ -51,7 +51,7 @@ end
 --local no.2
 function s.cfilter(c,ft)
 	-- No puede ser Ra (ID: 10000010)
-	local is_not_ra = not (c:IsCode(CARD_RA,10000080,10000090) or c:IsCode(511000237))
+	local is_not_ra = not c:IsCode(CARD_RA,10000080,10000090,511000237)
 	return is_not_ra and c:IsAbleToHandAsCost() 
 		and (ft>0 or (c:IsLocation(LOCATION_MZONE) and c:GetSequence()<5))
 end
@@ -70,7 +70,10 @@ function s.cost(e,tp,eg,ep,ev,re,r,rp,chk)
 	Duel.SendtoHand(g,nil,REASON_COST)
 end
 function s.actcon(e)
-	return Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsOriginalCodeRule,CARD_RA),e:GetHandlerPlayer(),LOCATION_MZONE,0,1,nil)
+	-- Se activa si controlas CUALQUIERA de las formas de Ra boca arriba
+	return Duel.IsExistingMatchingCard(function(c) 
+		return c:IsFaceup() and (c:IsCode(CARD_RA) or c:IsCode(10000080) or c:IsCode(10000090) or c:IsCode(511000237))
+	end, e:GetHandlerPlayer(), LOCATION_MZONE, 0, 1, nil)
 end
 function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return e:GetHandler():IsCanBeSpecialSummoned(e,0,tp,false,false) end
