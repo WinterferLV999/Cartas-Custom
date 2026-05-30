@@ -52,19 +52,29 @@ end
 
 -- LÓGICA DE INVOCACIÓN POR CONTACTO (ACUPLAR MATERIALES)
 function s.hspfilter(c,tp,sc)
-	return c:IsMonster() and c:IsCubicSeed() and c:IsFaceup() and c:IsLevelAbove(1)
+	-- Filtra monstruos "Cubic Seed" boca arriba que sean de Nivel 1 exactamente
+	return c:IsMonster() and c:IsCubicSeed() and c:IsFaceup() and c:IsLevel(1)
 		and Duel.GetLocationCountFromEx(tp,tp,c,sc)>0
 end
+
+function s.hspfilter(c,tp,sc)
+	-- Filtra monstruos "Cubic Seed" boca arriba que sean de Nivel 1 exactamente
+	return c:IsMonster() and c:IsCubicSeed() and c:IsFaceup() and c:IsLevel(1)
+		and Duel.GetLocationCountFromEx(tp,tp,c,sc)>0
+end
+
 function s.hspcon(e,c)
 	if c==nil then return true end
 	local tp=c:GetControler()
-	-- Comprueba que tengas al menos 2 Semillas Cúbicas de Nivel 1 o más en el campo
+	-- Ahora verifica si tienes AL MENOS 2 o más monstruos que cumplan el filtro
 	return Duel.IsExistingMatchingCard(s.hspfilter,tp,LOCATION_MZONE,0,2,nil,tp,c)
 end
+
 function s.hsptg(e,tp,eg,ep,ev,re,r,rp,chk,c)
 	if chk==0 then return true end
 	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_RELEASE)
-	local g=Duel.SelectMatchingCard(tp,s.hspfilter,tp,LOCATION_MZONE,0,2,2,nil,tp,c)
+	-- Cambiado: El motor ahora te permite seleccionar desde un mínimo de 2 hasta el máximo disponible en tu campo
+	local g=Duel.SelectMatchingCard(tp,s.hspfilter,tp,LOCATION_MZONE,0,2,99,nil,tp,c)
 	if #g>0 then
 		g:KeepAlive()
 		e:SetLabelObject(g)
@@ -72,17 +82,20 @@ function s.hsptg(e,tp,eg,ep,ev,re,r,rp,chk,c)
 	end
 	return false
 end
+
 function s.hspop(e,tp,eg,ep,ev,re,r,rp,c)
 	local g=e:GetLabelObject()
 	if not g then return end
-	-- Limpia materiales previos que pudieran tener las semillas acopladas
+	
+	-- Limpia materiales previos de los monstruos seleccionados si los hubiera
 	local tc=g:GetFirst()
 	while tc do
 		if tc:GetOverlayCount()~=0 then Duel.SendtoGrave(tc:GetOverlayGroup(),REASON_RULE) end
 		tc=g:GetNext()
 	end
+	
 	c:SetMaterial(g)
-	-- Coloca las Semillas Cúbicas debajo de esta carta como unidades acopladas (Stack)
+	-- Apila todas las Semillas seleccionadas debajo de Veda (Stack)
 	Duel.Overlay(c,g)
 	g:DeleteGroup()
 end
@@ -125,18 +138,68 @@ function s.spcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	Duel.SendtoDeck(c,nil,0,REASON_COST)
 end
 function s.spfilter(c,e,tp)
-	return c:IsMonster() and c:IsCubicSeed() and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
+	-- Filtra específicamente a Vijam la Semilla Cúbica (CARD_VIJAM = 4998619)
+	return c:IsCode(CARD_VIJAM) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
 end
+
 function s.thfilter(c)
 	return c:IsSetCard(0xe3) and c:IsAbleToHand()
 end
+
 function s.target0(e,tp,eg,ep,ev,re,r,rp,chk)
+	if chk==0 then return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
+		and Duel.IsExistingMatchingCard(s.thfilter,tp,LOCATION_DECK,0,1,nil)
+		and Duel.IsExistingMatchingCard(s.spfilter,tp,LOCATION_GRAVE,0,1,nil,e,tp) end
+	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE)
+	Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)
+end
+
+function s.operation0(e,tp,eg,ep,ev,re,r,rp)
+	-- 1. Intenta buscar el monstruo Cúbico en el Deck primero
+	local search_group=Duel.GetMatchingGroup(s.thfilter,tp,LOCATION_DECK,0,nil)
+	if #search_group==0 then return end
+	
+	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
+	local g_search=search_group:Select(tp,1,1,nil)
+	if #g_search>0 and Duel.SendtoHand(g_search,nil,REASON_EFFECT)>0 then
+		Duel.ConfirmCards(1-tp,g_search)
+		
+		-- 2. Calcula el espacio disponible en tu campo para las Semillas
+		local ft=Duel.GetLocationCount(tp,LOCATION_MZONE)
+		if ft<=0 then return end
+		if Duel.IsPlayerAffectedByEffect(tp,CARD_BLUEEYES_SPIRIT) then ft=1 end
+		
+		-- Elige el máximo espacio disponible, pero limitado a un tope de 3
+		local max_spawn=math.min(3,ft)
+		
+		-- Obtiene los Vijam válidos del cementerio
+		local grave_group=Duel.GetMatchingGroup(s.spfilter,tp,LOCATION_GRAVE,0,nil,e,tp)
+		if #grave_group>0 then
+			Duel.BreakEffect()
+			Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
+			-- Permite al usuario elegir libremente de 1 a 3 copias de Vijam
+			local g_summon=grave_group:Select(tp,1,max_spawn,nil)
+			if #g_summon>0 then
+				Duel.SpecialSummon(g_summon,0,tp,tp,false,false,POS_FACEUP)
+			end
+		end
+	end
+end
+
+
+function s.sspfilter(c,e,tp)
+	return c:IsMonster() and c:IsCubicSeed() and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
+end
+function s.sthfilter(c)
+	return c:IsSetCard(0xe3) and c:IsAbleToHand()
+end
+function s.starget0(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
 		and Duel.IsExistingMatchingCard(s.thfilter,tp,LOCATION_DECK,0,1,nil) end
 	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE)
 	Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)
 end
-function s.operation0(e,tp,eg,ep,ev,re,r,rp)
+function s.soperation0(e,tp,eg,ep,ev,re,r,rp)
 	-- Recuperamos el grupo que guardamos en el coste (los monstruos de abajo)
 	local sg=e:GetLabelObject()
 	if not sg then return end
