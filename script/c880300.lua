@@ -131,12 +131,10 @@ end
 function s.spcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	local c=e:GetHandler()
 	if chk==0 then return c:IsAbleToExtraAsCost() end
-	-- Guardamos las cartas de abajo en una variable temporal antes de que la carta se vaya
-	local mg=c:GetOverlayGroup()
-	mg:KeepAlive()
-	e:SetLabelObject(mg)
+	-- Al limpiar el GY, ya no necesitamos extraer el OverlayGroup aquí
 	Duel.SendtoDeck(c,nil,0,REASON_COST)
 end
+
 function s.spfilter(c,e,tp)
 	-- Filtra específicamente a Vijam la Semilla Cúbica (CARD_VIJAM = 4998619)
 	return c:IsCode(CARD_VIJAM) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
@@ -147,15 +145,20 @@ function s.thfilter(c)
 end
 
 function s.target0(e,tp,eg,ep,ev,re,r,rp,chk)
+	-- Ahora el chequeo mínimo obligatorio es tener espacio en el campo y poder buscar en el Deck
 	if chk==0 then return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
-		and Duel.IsExistingMatchingCard(s.thfilter,tp,LOCATION_DECK,0,1,nil)
-		and Duel.IsExistingMatchingCard(s.spfilter,tp,LOCATION_GRAVE,0,1,nil,e,tp) end
-	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE)
+		and Duel.IsExistingMatchingCard(s.thfilter,tp,LOCATION_DECK,0,1,nil) end
+	
+	-- El juego registra que se podría realizar una búsqueda a la mano
 	Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)
+	
+	-- Informamos al sistema que la invocación desde el cementerio es una POSIBILIDAD
+	-- Al usar "SetPossibleOperationInfo", el juego permite activar la carta aunque no haya objetivos en el GY todavía
+	Duel.SetPossibleOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE)
 end
 
 function s.operation0(e,tp,eg,ep,ev,re,r,rp)
-	-- 1. Intenta buscar el monstruo Cúbico en el Deck primero
+	-- 1. Busca el monstruo Cúbico en el Deck de forma obligatoria
 	local search_group=Duel.GetMatchingGroup(s.thfilter,tp,LOCATION_DECK,0,nil)
 	if #search_group==0 then return end
 	
@@ -164,20 +167,18 @@ function s.operation0(e,tp,eg,ep,ev,re,r,rp)
 	if #g_search>0 and Duel.SendtoHand(g_search,nil,REASON_EFFECT)>0 then
 		Duel.ConfirmCards(1-tp,g_search)
 		
-		-- 2. Calcula el espacio disponible en tu campo para las Semillas
+		-- 2. Intenta revivir los Vijam del Cementerio (Solo si existen y hay espacio)
 		local ft=Duel.GetLocationCount(tp,LOCATION_MZONE)
 		if ft<=0 then return end
 		if Duel.IsPlayerAffectedByEffect(tp,CARD_BLUEEYES_SPIRIT) then ft=1 end
 		
-		-- Elige el máximo espacio disponible, pero limitado a un tope de 3
 		local max_spawn=math.min(3,ft)
-		
-		-- Obtiene los Vijam válidos del cementerio
 		local grave_group=Duel.GetMatchingGroup(s.spfilter,tp,LOCATION_GRAVE,0,nil,e,tp)
+		
+		-- Si se encuentra al menos un Vijam en el cementerio, procesa la invocación
 		if #grave_group>0 then
-			Duel.BreakEffect()
+			Duel.BreakEffect() -- Hace una pausa en la resolución visual del juego
 			Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
-			-- Permite al usuario elegir libremente de 1 a 3 copias de Vijam
 			local g_summon=grave_group:Select(tp,1,max_spawn,nil)
 			if #g_summon>0 then
 				Duel.SpecialSummon(g_summon,0,tp,tp,false,false,POS_FACEUP)
@@ -187,6 +188,15 @@ function s.operation0(e,tp,eg,ep,ev,re,r,rp)
 end
 
 
+function s.sspcost(e,tp,eg,ep,ev,re,r,rp,chk)
+	local c=e:GetHandler()
+	if chk==0 then return c:IsAbleToExtraAsCost() end
+	-- Guardamos las cartas de abajo en una variable temporal antes de que la carta se vaya
+	local mg=c:GetOverlayGroup()
+	mg:KeepAlive()
+	e:SetLabelObject(mg)
+	Duel.SendtoDeck(c,nil,0,REASON_COST)
+end
 function s.sspfilter(c,e,tp)
 	return c:IsMonster() and c:IsCubicSeed() and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
 end
