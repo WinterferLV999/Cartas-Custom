@@ -4,19 +4,22 @@ function s.initial_effect(c)
 	Xyz.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsAttribute,ATTRIBUTE_DARK),4,3,s.ovfilter,aux.Stringid(id,0),3,s.xyzop)
 	c:EnableReviveLimit()
 	
-	-- EFECTO ①: Negación masiva, reducción de ATK a 0 y aumento de poder (Efecto de Encendido)
+	-- EFECTO ①: Negación masiva, reducción de ATK a 0, aumento de poder e INMUNIDAD CONTINUA ABSOLUTA (Tu efecto rápido inmune)
 	local e1=Effect.CreateEffect(c)
 	e1:SetDescription(aux.Stringid(id,1))
 	e1:SetCategory(CATEGORY_DISABLE+CATEGORY_ATKCHANGE)
-	e1:SetType(EFFECT_TYPE_IGNITION) -- CORREGIDO: Cambiado a efecto de encendido estándar
+	e1:SetType(EFFECT_TYPE_IGNITION)
+	--e1:SetType(EFFECT_TYPE_QUICK_O)
+	e1:SetCode(EVENT_FREE_CHAIN)
 	e1:SetRange(LOCATION_MZONE)
-	-- Se elimina SetCode(EVENT_FREE_CHAIN) y SetHintTiming porque ya no es Efecto Rápido
+	e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE) -- Mantiene la inmunidad nativa de cadena que te funcionó
 	e1:SetCountLimit(1,id)
+	e1:SetHintTiming(0,TIMINGS_CHECK_MONSTER_E|TIMING_MAIN_END)
 	e1:SetCost(s.discost)
 	e1:SetOperation(s.disop)
 	c:RegisterEffect(e1)
 	
-	-- REGLA DE INMUNIDAD: Protege contra Skill Drain solo si tiene a Dark Rebellion como material
+	-- REGLA DE INMUNIDAD: Protege al propio monstruo de Skill Drain u otras negaciones si tiene el material
 	local e2=Effect.CreateEffect(c)
 	e2:SetType(EFFECT_TYPE_SINGLE)
 	e2:SetCode(EFFECT_CANNOT_DISABLE)
@@ -24,7 +27,7 @@ function s.initial_effect(c)
 	e2:SetCondition(s.immcon)
 	c:RegisterEffect(e2)
 
-	-- EFECTO ②: Flotación / Venganza con acople inmediato
+	-- EFECTO ③: Tu nueva flotación de venganza con acople inmediato al Dark Rebellion original
 	local e3=Effect.CreateEffect(c)
 	e3:SetDescription(aux.Stringid(id,2)) 
 	e3:SetCategory(CATEGORY_SPECIAL_SUMMON)
@@ -55,21 +58,34 @@ function s.discost(e,tp,eg,ep,ev,re,r,rp,chk)
 end
 function s.disop(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
+	
+	-- LA SOLUCIÓN TÉCNICA: Si el oponente encadenó Chalice y NO tenemos el material, 
+	-- el motor aplicará el estado IsDisabled(). Si está desactivado, el efecto se detiene de inmediato.
+	if c:IsDisabled() and not s.immcon(e) then return end
+	
+	-- Buscamos todas las cartas boca arriba que controla el oponente en el campo
 	local g=Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_ONFIELD,nil)
 	if #g==0 then return end
+	
 	local negated_count=0
+	
 	for tc in aux.Next(g) do
+		-- Negamos los efectos de la carta continuamente boca arriba
 		local e1=Effect.CreateEffect(c)
 		e1:SetType(EFFECT_TYPE_SINGLE)
 		e1:SetCode(EFFECT_DISABLE)
 		e1:SetReset(RESET_EVENT+RESETS_STANDARD+RESET_PHASE+PHASE_END)
 		tc:RegisterEffect(e1)
+		
 		local e2=Effect.CreateEffect(c)
 		e2:SetType(EFFECT_TYPE_SINGLE)
 		e2:SetCode(EFFECT_DISABLE_EFFECT)
 		e2:SetReset(RESET_EVENT+RESETS_STANDARD+RESET_PHASE+PHASE_END)
 		tc:RegisterEffect(e2)
+		
 		negated_count = negated_count + 1
+		
+		-- Si la carta del rival es un monstruo, reducimos su ATK a 0 de forma definitiva
 		if tc:IsType(TYPE_MONSTER) then
 			local e3=Effect.CreateEffect(c)
 			e3:SetType(EFFECT_TYPE_SINGLE)
@@ -79,6 +95,8 @@ function s.disop(e,tp,eg,ep,ev,re,r,rp)
 			tc:RegisterEffect(e3)
 		end
 	end
+	
+	-- El dragón gana 1000 de ATK por cada carta silenciada con éxito
 	if negated_count>0 and c:IsFaceup() and c:IsRelateToEffect(e) then
 		local bonus_atk = negated_count * 1000
 		local e4=Effect.CreateEffect(c)
@@ -90,7 +108,7 @@ function s.disop(e,tp,eg,ep,ev,re,r,rp)
 	end
 end
 
--- --- LÓGICA DE FLOTACIÓN CON ACOPLE (e3) ---
+-- --- LÓGICA DE FLOTACIÓN CON ACOPLE INMEDIATO (e3) ---
 function s.spcon(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
 	return rp~=tp and c:IsReason(REASON_EFFECT) and c:GetPreviousControler()==tp and c:IsPreviousPosition(POS_FACEUP)
@@ -111,9 +129,11 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
 	if not (tc and tc:IsRelateToEffect(e)) then return end
 	if Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP_DEFENSE)~=0 then
+		-- Absorbe y acopla la armadura inmediatamente como material
 		if c:IsRelateToEffect(e) and (c:IsLocation(LOCATION_GRAVE) or c:IsLocation(LOCATION_REMOVED)) then
 			Duel.Overlay(tc, Group.FromCards(c))
 		end
+		-- Concede las protecciones de combate
 		local e1=Effect.CreateEffect(c)
 		e1:SetDescription(3008)
 		e1:SetProperty(EFFECT_FLAG_CLIENT_HINT)
