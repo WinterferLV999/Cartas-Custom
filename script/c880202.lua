@@ -1,12 +1,21 @@
 local s,id=GetID()
 function s.initial_effect(c)
 	c:EnableReviveLimit()
-	--level/rank
+	c:EnableUnsummonable()
+	local e_lock=Effect.CreateEffect(c)
+	e_lock:SetType(EFFECT_TYPE_SINGLE)
+	e_lock:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+	e_lock:SetCode(EFFECT_SPSUMMON_CONDITION)
+	--e_lock:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)
+	e_lock:SetValue(s.splimit) 
+	c:RegisterEffect(e_lock)
+	-- level/rank
 	local e0=Effect.CreateEffect(c)
 	e0:SetType(EFFECT_TYPE_SINGLE)
 	e0:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
 	e0:SetCode(EFFECT_RANK_LEVEL_S)
 	c:RegisterEffect(e0)
+	-- PROCEDIMIENTO ÚNICO DE INVOCACIÓN (EFFECT_SPSUMMON_PROC)
 	local e1=Effect.CreateEffect(c)
 	e1:SetType(EFFECT_TYPE_FIELD)
 	e1:SetProperty(EFFECT_FLAG_UNCOPYABLE)
@@ -16,7 +25,7 @@ function s.initial_effect(c)
 	e1:SetTarget(s.hsptg)
 	e1:SetOperation(s.hspop)
 	c:RegisterEffect(e1)
-	--prevent effect activation
+	-- prevent effect activation (Inmunidad y Congelación de campo del rival)
 	local e2=Effect.CreateEffect(c)
 	e2:SetDescription(aux.Stringid(id,1))
 	e2:SetType(EFFECT_TYPE_QUICK_O)
@@ -27,7 +36,7 @@ function s.initial_effect(c)
 	e2:SetCost(s.cost)
 	e2:SetOperation(s.operation)
 	c:RegisterEffect(e2)
-	--copy
+	-- copy (Absorción de ATK, negación y clonación de efectos de tu código)
 	local e3=Effect.CreateEffect(c)
 	e3:SetDescription(aux.Stringid(id,2))
 	e3:SetProperty(EFFECT_FLAG_CARD_TARGET)
@@ -39,7 +48,7 @@ function s.initial_effect(c)
 	e3:SetTarget(s.atktg)
 	e3:SetOperation(s.atkop)
 	c:RegisterEffect(e3)
-	--destroy and damage
+	-- destroy and damage (Venganza masiva al dejar el campo por efecto rival)
 	local e6=Effect.CreateEffect(c)
 	e6:SetDescription(aux.Stringid(id,3))
 	e6:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
@@ -50,8 +59,19 @@ function s.initial_effect(c)
 	e6:SetTarget(s.pentg)
 	e6:SetOperation(s.penop)
 	c:RegisterEffect(e6)
+	local e7=Effect.CreateEffect(c)
+	e7:SetType(EFFECT_TYPE_SINGLE)
+	e7:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+	e7:SetCode(EFFECT_ADD_SETCODE)
+	e7:SetValue(0x13b)
+	c:RegisterEffect(e7)
 end
---Local No.1
+function s.splimit(e,se,sp,st)
+	--return se and se:GetHandler()==e:GetHandler()
+	return se and se:GetCode()~=EFFECT_SPSUMMON_PROC
+	--return se and se:GetHandler()==e:GetHandler() and (st&SUMMON_TYPE_SPECIAL)==0
+end
+-- --- LOCAL No.1: REQUISITOS FÍSICOS DE SUPERPOSICIÓN DE MATERIALES ---
 function s.hspfilter(c,tp,sc)
 	return c:IsMonster() and c:IsFaceup() and c:IsCode(16195942,41209827)
 		and Duel.GetLocationCountFromEx(tp,tp,c,sc)>0
@@ -78,9 +98,7 @@ end
 function s.hspop(e,tp,eg,ep,ev,re,r,rp,c)
 	local g=e:GetLabelObject()
 	if not g then return end
-	
 	local ov_group=Group.CreateGroup()
-	
 	local tc=g:GetFirst()
 	while tc do
 		if tc:GetOverlayCount()~=0 then 
@@ -88,25 +106,21 @@ function s.hspop(e,tp,eg,ep,ev,re,r,rp,c)
 		end
 		tc=g:GetNext()
 	end
-	
 	c:SetMaterial(g)
-	
 	Duel.Overlay(c,g)
-	
 	if #ov_group>0 then
 		Duel.Overlay(c,ov_group)
 	end
-	
 	g:DeleteGroup()
 	ov_group:DeleteGroup()
 end
---Local No.2
+
+-- --- LOCAL No.2: DETONADOR DEL AURA DE INMUNIDAD ---
 function s.cpcon(e,tp,eg,ep,ev,re,r,rp)
 	if Duel.IsTurnPlayer(1-tp) then return false end
 	return Duel.IsMainPhase() and e:GetHandler():GetOverlayGroup():IsExists(Card.IsCode,1,nil,16195942)
 end
 function s.effilter(e,te)
-	--return te:IsMonsterEffect() and te:GetHandler():IsLevelAbove(5) and te:GetOwner()~=e:GetOwner()-- and te:GetOwnerPlayer()~=e:GetHandlerPlayer()
 	return te:GetOwner()~=e:GetOwner() and te:IsMonsterEffect() and te:GetHandler():IsLevelAbove(5)
 end
 function s.cost(e,tp,eg,ep,ev,re,r,rp,chk)
@@ -123,17 +137,17 @@ function s.cost(e,tp,eg,ep,ev,re,r,rp,chk)
 end
 function s.operation(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
-	--Your opponent's cards and effects cannot be activated
 	local e2=Effect.CreateEffect(c)
 	e2:SetType(EFFECT_TYPE_FIELD)
 	e2:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
 	e2:SetCode(EFFECT_CANNOT_ACTIVATE)
 	e2:SetTargetRange(0,1)
 	e2:SetValue(1)
-	e2:SetReset(RESET_PHASE|PHASE_END)
+	e2:SetReset(RESET_PHASE+PHASE_END)
 	Duel.RegisterEffect(e2,tp)
 end
---Local No.3
+
+-- --- LOCAL No.3: ABSORCIÓN DE COMBATE Y COPIA DE IDENTIDAD ---
 function s.costt(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return e:GetHandler():CheckRemoveOverlayCard(tp,1,REASON_COST) end
 	e:GetHandler():RemoveOverlayCard(tp,1,1,REASON_COST)
@@ -148,9 +162,7 @@ function s.atkop(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
 	local tc=Duel.GetFirstTarget()
 	if tc:IsFaceup() and tc:IsRelateToEffect(e) and not tc:IsImmuneToEffect(e) then
-	    --Negate effect
 		tc:NegateEffects(c,RESETS_STANDARD_PHASE_END)
-		-- Half ATK
 		local atk=tc:GetAttack()
 		local e1=Effect.CreateEffect(c)
 		e1:SetType(EFFECT_TYPE_SINGLE)
@@ -159,7 +171,6 @@ function s.atkop(e,tp,eg,ep,ev,re,r,rp)
 		e1:SetValue(math.ceil(atk/2))
 		tc:RegisterEffect(e1)
 		if c:IsRelateToEffect(e) and c:IsFaceup() then
-		    -- Double ATK
 			local e2=Effect.CreateEffect(c)
 			e2:SetType(EFFECT_TYPE_SINGLE)
 			e2:SetCode(EFFECT_SET_ATTACK)
@@ -167,29 +178,24 @@ function s.atkop(e,tp,eg,ep,ev,re,r,rp)
 			e2:SetReset(RESETS_STANDARD_PHASE_END)
 			e2:SetValue(c:GetAttack()*2)
 			c:RegisterEffect(e2)
-		    --Copy name
-		    local code=tc:GetOriginalCodeRule()
-		    local e3=Effect.CreateEffect(c)
-		    e3:SetType(EFFECT_TYPE_SINGLE)
-		    e3:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
-		    e3:SetCode(EFFECT_ADD_CODE)
-		    e3:SetValue(code)
-		    e3:SetReset(RESETS_STANDARD_PHASE_END)
-		    c:RegisterEffect(e3)
-		    if not tc:IsType(TYPE_TRAPMONSTER) then
-		    --Copy effects
-			    c:CopyEffect(code,RESETS_STANDARD_PHASE_END,1)
+			local code=tc:GetOriginalCodeRule()
+			local e3=Effect.CreateEffect(c)
+			e3:SetType(EFFECT_TYPE_SINGLE)
+			e3:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
+			e3:SetCode(EFFECT_ADD_CODE)
+			e3:SetValue(code)
+			e3:SetReset(RESETS_STANDARD_PHASE_END)
+			c:RegisterEffect(e3)
+			if not tc:IsType(TYPE_TRAPMONSTER) then
+				c:CopyEffect(code,RESETS_STANDARD_PHASE_END,1)
 			end
 		end
 	end
 end
---Local No.6
+
+-- --- LOCAL No.6: VENGANZA AL DEJAR EL CAMPO ---
 function s.pencon(e,tp,eg,ep,ev,re,r,rp)
 	return rp==1-tp and e:GetHandler():IsPreviousControler(tp)
-end
-function s.penconn(e,tp,eg,ep,ev,re,r,rp)
-	local c=e:GetHandler()
-	return c:IsPreviousLocation(LOCATION_MZONE) and c:IsFaceup()
 end
 function s.pentg(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return Duel.IsExistingMatchingCard(Card.IsAbleToDestroy,tp,0,LOCATION_ONFIELD,1,nil) end
