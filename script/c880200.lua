@@ -4,7 +4,8 @@ local s,id=GetID()
 function s.initial_effect(c)
 	--fusion summon
 	c:EnableReviveLimit()
-	Fusion.AddProcMix(c,true,true,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_STARVING_VENOM),aux.FilterBoolFunctionEx(Card.IsSetCard,SET_SUPREME_KING_DRAGON))
+	Fusion.AddProcMixRep(c,true,true,s.mfilter2,1,1,s.mfilter1)
+	--Fusion.AddProcMix(c,true,true,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_STARVING_VENOM),aux.FilterBoolFunctionEx(Card.IsSetCard,SET_SUPREME_KING_DRAGON))
 	--special summon
 	local e0=Effect.CreateEffect(c)
 	e0:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
@@ -79,6 +80,12 @@ function s.initial_effect(c)
 end
 s.listed_series={SET_SUPREME_KING_DRAGON}
 s.listed_names={13331639}
+function s.mfilter1(c,fc,sumtype,tp)
+	return c:IsSetCard(SET_SUPREME_KING_DRAGON) and c:IsOnField()
+end
+function s.mfilter2(c,fc,sumtype,tp)
+	return c:IsSetCard(SET_STARVING_VENOM) and c:IsOnField()
+end
 --Local No.0
 function s.spfilter(c,tp)
 	return c:IsControler(1-tp) and c:IsPreviousLocation(LOCATION_EXTRA)
