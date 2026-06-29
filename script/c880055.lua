@@ -1,4 +1,3 @@
-
 local s,id=GetID()
 function s.initial_effect(c)
 	--Activate
@@ -10,11 +9,11 @@ function s.initial_effect(c)
 	e1:SetOperation(s.activate)
 	c:RegisterEffect(e1)
 end
---local no.2
---local no.1
+
 function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return e:IsHasType(EFFECT_TYPE_ACTIVATE) end
 end
+
 function s.activate(e,tp,eg,ep,ev,re,r,rp)
 	local e1=Effect.CreateEffect(e:GetHandler())
 	e1:SetDescription(aux.Stringid(id,0))
@@ -28,9 +27,11 @@ function s.activate(e,tp,eg,ep,ev,re,r,rp)
 	e1:SetValue(aux.TRUE)
 	Duel.RegisterEffect(e1,tp)
 end
+
 function s.filter(c,e)
 	return c:IsMonster() and c:IsCanBeFusionMaterial() and c:IsAbleToRemove() and not c:IsImmuneToEffect(e)
 end
+
 function s.chain_target(e,te,tp,value)
 	if not value or value&SUMMON_TYPE_FUSION==0 then return Group.CreateGroup() end
 	if Duel.IsPlayerAffectedByEffect(tp,69832741) then
@@ -39,11 +40,13 @@ function s.chain_target(e,te,tp,value)
 		return Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE+LOCATION_GRAVE+LOCATION_DECK+LOCATION_HAND+LOCATION_EXTRA,0,nil,te)
 	end
 end
+
 function s.chain_operation(e,te,tp,tc,mat,sumtype,sg,sumpos)
 	if not sumtype then sumtype=SUMMON_TYPE_FUSION end
 	tc:SetMaterial(mat)
 	Duel.Remove(mat,POS_FACEUP,REASON_EFFECT+REASON_MATERIAL+REASON_FUSION)
 	Duel.BreakEffect()
+	
 	if sg then
 		sg:AddCard(tc)
 		tc:RegisterFlagEffect(id,RESET_EVENT+RESETS_STANDARD-(RESET_TOFIELD+RESET_TURN_SET),0,1)
@@ -51,6 +54,16 @@ function s.chain_operation(e,te,tp,tc,mat,sumtype,sg,sumpos)
 		Duel.SpecialSummonStep(tc,sumtype,tp,tp,false,false,sumpos)
 		tc:RegisterFlagEffect(id,RESET_EVENT+RESETS_STANDARD-RESET_TURN_SET,0,1)
 	end
+	
+	-- ⚡ NUEVO ADICIONAL: SISTEMA DE CASTIGO DE DAÑO POR FUSIÓN ⚡
+	-- Captura el ATK original impreso en el monstruo de fusión invocado
+	local atk=tc:GetTextAttack()
+	if atk>0 then
+		-- Calcula la mitad exacta redondeando hacia arriba e inflige el daño al controlador (tp)
+		Duel.Damage(tp,math.ceil(atk/2),REASON_EFFECT)
+	end
+	
+	-- Mantiene intacto tu reloj de autodestrucción en la End Phase
 	local e1=Effect.CreateEffect(e:GetHandler())
 	e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
 	e1:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)
@@ -61,6 +74,7 @@ function s.chain_operation(e,te,tp,tc,mat,sumtype,sg,sumpos)
 	e1:SetCountLimit(1)
 	Duel.RegisterEffect(e1,tp)
 end
+
 function s.descon(e,tp,eg,ep,ev,re,r,rp)
 	local tc=e:GetLabelObject()
 	if tc:GetFlagEffect(id)~=0 then
@@ -70,6 +84,7 @@ function s.descon(e,tp,eg,ep,ev,re,r,rp)
 		return false
 	end
 end
+
 function s.desop(e,tp,eg,ep,ev,re,r,rp)
 	local tc=e:GetLabelObject()
 	Duel.Destroy(tc,REASON_EFFECT)
