@@ -2,11 +2,19 @@
 local s,id=GetID()
 function s.initial_effect(c)
 	--Synchro Summon Procedure
-	Synchro.AddProcedure(c,aux.FilterBoolFunctionEx(s.predafilter),1,1,Synchro.NonTunerEx(s.matfilter),1,1)
+	-- INVOCACIÓN OFICIAL DE SINCRONÍA: Exige 1 Tuner + 1 Monstruo de Fusión que pertenezca al arquetipo Predaplant (0x10f3)
+	Synchro.AddProcedure(c,nil,1,1,Synchro.NonTuner(s.predap_fusion_filter),1,99,function(tc) return s.matfilter(tc,c) end)
 	c:EnableReviveLimit()
 	--c:EnableCounterPermit(0x1041)
 	--c:SetCounterLimit(0x1041)
 	--indes
+	-- EL RADAR EXCLUSIVO DEL RIVAL: Solo tú puedes mirar hacia el campo del oponente para buscar material
+	local e4=Effect.CreateEffect(c)
+	e4:SetType(EFFECT_TYPE_FIELD)
+	e4:SetRange(LOCATION_EXTRA)
+	e4:SetCode(EFFECT_SYNCHRO_MATERIAL)
+	e4:SetTargetRange(0,LOCATION_MZONE) -- Mira ESTRICTAMENTE al oponente (0 para ti, MZONE para él)
+	c:RegisterEffect(e4)
 	local e0=Effect.CreateEffect(c)
 	e0:SetType(EFFECT_TYPE_SINGLE)
 	e0:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
@@ -44,6 +52,19 @@ function s.predafilter(c,sc,st,tp)
 end
 function s.matfilter(c,val,scard,sumtype,tp)
 	return c:IsSetCard(SET_PREDAPLANT) and c:IsType(TYPE_FUSION,sc,st,tp)
+end
+function s.predap_fusion_filter(c,scard,sumtype,tp)
+	return c:IsType(TYPE_FUSION) and c:IsSetCard(0x10f3,scard,sumtype,tp)
+end
+function s.matfilter(c,scard)
+	local tp=scard:GetControler()
+	
+	-- REGLA 1: Si el monstruo No-Cantante es TUYO, el juego valida la regla en limpio
+	if c:IsControler(tp) then return c:IsFaceup() end
+	
+	-- REGLA 2 EL CANDADO INDIVIDUAL: Si el monstruo es del RIVAL (1-tp),
+	-- exige estrictamente el Contador Predator, bloqueando cartas limpias como Chimerarafflesia
+	return c:IsFaceup() and c:IsControler(1-tp) and c:GetCounter(0x1041)>0
 end
 --Local no.2,3
 function s.cfilter(c,seq,p)
