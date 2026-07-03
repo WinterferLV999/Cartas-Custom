@@ -1,4 +1,3 @@
-
 local s,id=GetID()
 function s.initial_effect(c)
 	--Special Summon
@@ -19,14 +18,30 @@ function s.initial_effect(c)
 	e2:SetType(EFFECT_TYPE_QUICK_O)
 	e2:SetCode(EVENT_FREE_CHAIN)
 	e2:SetHintTiming(0,TIMINGS_CHECK_MONSTER)
+	e2:SetCountLimit(1,id)
 	e2:SetRange(LOCATION_GRAVE)
-	e2:SetCondition(aux.exccon)
 	e2:SetCost(aux.bfgcost)
+	e2:SetCondition(s.quick_grave_condition)
 	e2:SetOperation(s.spoperation)
 	c:RegisterEffect(e2)
-	--draw
+	local e3=Effect.CreateEffect(c)
+	e3:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)
+	e3:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)
+	e3:SetCode(EVENT_TO_GRAVE)
+	e3:SetOperation(s.register_grave_op)
+	c:RegisterEffect(e3)
 end
 s.listed_series={0x10f3,0x10f3}
+function s.register_grave_op(e,tp,eg,ep,ev,re,r,rp)
+	-- Clava un Flag en el jugador que expira estrictamente al terminar el turno actual (id+200)
+	Duel.RegisterFlagEffect(tp,id+200,RESET_PHASE+PHASE_END,0,1)
+end
+
+function s.quick_grave_condition(e,tp,eg,ep,ev,re,r,rp)
+	-- REGLA DE EXCLUSIÓN: Solo permite la activación si el Flag de caída (id+200) NO existe en la memoria
+	-- Esto prohíbe activar el efecto en el mismo turno que fue enviada al cementerio
+	return aux.exccon(e,tp,eg,ep,ev,re,r,rp) and Duel.GetFlagEffect(tp,id+200)==0
+end
 --local no.1
 function s.counterfilter(c)
 	return c:IsSetCard(0x10f3) or c:IsSetCard(0x10f3)
@@ -88,51 +103,78 @@ end
 
 function s.spoperation(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
+	
+	-- EFECTO ①: Captura Invocaciones Especiales fuera de cadena (Sincronía, Péndulo, Contacto de AMBOS)
 	local e1=Effect.CreateEffect(c)
 	e1:SetType(EFFECT_TYPE_CONTINUOUS+EFFECT_TYPE_FIELD)
 	e1:SetProperty(EFFECT_FLAG_DELAY)
 	e1:SetCode(EVENT_SPSUMMON_SUCCESS)
 	e1:SetCondition(s.drcon1)
 	e1:SetOperation(s.drop1)
-	e1:SetReset(RESET_PHASE+PHASE_END)
+	e1:SetReset(RESET_PHASE|PHASE_END)
 	Duel.RegisterEffect(e1,tp)
-	--sp_summon effect
+	
+	-- EFECTO ②: Registra Invocaciones Especiales que ocurren en cadena activa de AMBOS
 	local e2=Effect.CreateEffect(c)
 	e2:SetType(EFFECT_TYPE_CONTINUOUS+EFFECT_TYPE_FIELD)
 	e2:SetCode(EVENT_SPSUMMON_SUCCESS)
 	e2:SetCondition(s.regcon)
 	e2:SetOperation(s.regop)
-	e2:SetReset(RESET_PHASE+PHASE_END)
+	e2:SetReset(RESET_PHASE|PHASE_END)
 	Duel.RegisterEffect(e2,tp)
+	
+	-- EFECTO ③: Ejecuta el robo acumulado al resolverse la cadena
 	local e3=Effect.CreateEffect(c)
 	e3:SetType(EFFECT_TYPE_CONTINUOUS+EFFECT_TYPE_FIELD)
 	e3:SetCode(EVENT_CHAIN_SOLVED)
 	e3:SetCondition(s.drcon2)
 	e3:SetOperation(s.drop2)
-	e3:SetReset(RESET_PHASE+PHASE_END)
+	e3:SetReset(RESET_PHASE|PHASE_END)
 	Duel.RegisterEffect(e3,tp)
 end
-function s.filter(c,sp)
-	return c:GetSummonPlayer()==sp
+
+-- CORREGIDO: Se elimino el parametro de jugador "sp". Ahora acepta cualquier monstruo invocado especialmente de forma global.
+function s.filter(c)
+	return c:IsMonster()
 end
+
+-- --- 1. RESOLUCIÓN FUERA DE CADENA (PÉNDULO / SINCRONÍA / CONTACTO) ---
 function s.drcon1(e,tp,eg,ep,ev,re,r,rp)
-	return eg:IsExists(s.filter,1,nil,1-tp)
-		and (not re:IsHasType(EFFECT_TYPE_ACTIONS) or re:IsHasType(EFFECT_TYPE_CONTINUOUS))
+	if not eg:IsExists(s.filter,1,nil) then return false end
+	if not re then return true end
+	return not re:IsHasType(EFFECT_TYPE_ACTIONS) or re:IsHasType(EFFECT_TYPE_CONTINUOUS)
 end
+
 function s.drop1(e,tp,eg,ep,ev,re,r,rp)
-	Duel.Draw(tp,1,REASON_EFFECT)
+	-- Cuenta absolutamente todos los monstruos que cayeron en este evento (tuyos y del rival)
+	local count=eg:FilterCount(s.filter,nil)
+	if count>0 then
+		Duel.Draw(tp,count,REASON_EFFECT)
+	end
 end
+
+-- --- 2. RESOLUCIÓN DENTRO DE CADENA (EFECTOS ACTIVOS) ---
 function s.regcon(e,tp,eg,ep,ev,re,r,rp)
-	return eg:IsExists(s.filter,1,nil,1-tp)  or eg:IsExists(s.filter,1,nil,tp)
-		and re:IsHasType(EFFECT_TYPE_ACTIONS) and not re:IsHasType(EFFECT_TYPE_CONTINUOUS)
+	if not eg:IsExists(s.filter,1,nil) then return false end
+	if not re then return false end
+	return re:IsHasType(EFFECT_TYPE_ACTIONS) and not re:IsHasType(EFFECT_TYPE_CONTINUOUS)
 end
+
 function s.regop(e,tp,eg,ep,ev,re,r,rp)
-	Duel.RegisterFlagEffect(tp,id,RESET_CHAIN,0,1)
+	-- Clava en la memoria 1 Flag por cada criatura que nacio en el eslabon sin importar el dueño
+	local count=eg:FilterCount(s.filter,nil)
+	for i=1,count do
+		Duel.RegisterFlagEffect(tp,id,RESET_CHAIN,0,1)
+	end
 end
+
+-- --- 3. CIERRE DE CADENA ---
 function s.drcon2(e,tp,eg,ep,ev,re,r,rp)
 	return Duel.GetFlagEffect(tp,id)>0
 end
+
 function s.drop2(e,tp,eg,ep,ev,re,r,rp)
+	-- Recoge el acumulado total de monstruos nacidos en la cadena, limpia y te otorga las cartas
 	local n=Duel.GetFlagEffect(tp,id)
 	Duel.ResetFlagEffect(tp,id)
 	Duel.Draw(tp,n,REASON_EFFECT)

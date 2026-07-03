@@ -6,11 +6,12 @@ function s.initial_effect(c)
 	Fusion.AddProcMixRep(c,true,true,s.mfilter2,2,99,s.mfilter1)
 	--add counter
 	local e1=Effect.CreateEffect(c)
-	e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)
+	e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+	e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
 	e1:SetCode(EVENT_SPSUMMON_SUCCESS)
 	e1:SetRange(LOCATION_MZONE)
-	e1:SetTarget(s.addct)
-	e1:SetOperation(s.addc)
+	e1:SetCondition(s.no_chain_ct_con)
+	e1:SetOperation(s.no_chain_ct_op)
 	c:RegisterEffect(e1)
 	--local e1=Effect.CreateEffect(c)
 	--e1:SetDescription(aux.Stringid(id,0))
@@ -52,13 +53,15 @@ function s.mfilter2(c,fc,sumtype,tp)
 	return c:GetCounter(0x1041)>0 and c:IsOnField()
 end
 --local no.1
-function s.addct(e,tp,eg,ep,ev,re,r,rp,chk)
-	if chk==0 then return true end
-	Duel.SetOperationInfo(0,CATEGORY_COUNTER,nil,1,0,0x1041)
+function s.no_chain_ct_con(e,tp,eg,ep,ev,re,r,rp)
+	-- El radar continuo verifica si este monstruo (e:GetHandler()) está en el grupo que acaba de pisar el campo
+	return eg:IsContains(e:GetHandler())
 end
-function s.addc(e,tp,eg,ep,ev,re,r,rp)
-	if e:GetHandler():IsRelateToEffect(e) then
-		e:GetHandler():AddCounter(0x1041+COUNTER_NEED_ENABLE,2)
+function s.no_chain_ct_op(e,tp,eg,ep,ev,re,r,rp)
+	local c=e:GetHandler()
+	-- Clava los 2 contadores directamente en el mapa de bits del monstruo boca arriba en el acto
+	if c:IsFaceup() then
+		c:AddCounter(0x1041,2)
 	end
 end
 function s.target(e,tp,eg,ep,ev,re,r,rp,chk)

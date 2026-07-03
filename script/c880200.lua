@@ -58,10 +58,9 @@ function s.initial_effect(c)
 	local e5=Effect.CreateEffect(c)
 	e5:SetDescription(aux.Stringid(id,2))
 	e5:SetCategory(CATEGORY_SPECIAL_SUMMON)
-	e5:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_CANNOT_DISABLE)
+	e5:SetProperty(EFFECT_FLAG_CANNOT_DISABLE) -- CORREGIDO: Se removió PLAYER_TARGET ya que este efecto apunta a cartas, no a jugadores
 	e5:SetType(EFFECT_TYPE_QUICK_O)
 	e5:SetCode(EVENT_FREE_CHAIN)
-	e5:SetHintTiming(0,TIMING_END_PHASE)
 	e5:SetRange(LOCATION_MZONE)
 	e5:SetCost(s.spcost)
 	e5:SetTarget(s.sptg)
@@ -205,26 +204,71 @@ function s.spcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return e:GetHandler():IsAbleToExtraAsCost() end
 	Duel.SendtoDeck(e:GetHandler(),nil,0,REASON_COST)
 end
-function s.spfilter2(c,e,tp)
-	return c:IsFaceup() and c:IsSetCard(SET_STARVING_VENOM) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
+
+function s.bypass_filter(c)
+	local set = SET_STARVING_VENOM or 0x110f
+	return (c:IsSetCard(set) or c:IsCode(13331639)) and c:IsMonster()
 end
-function s.spfilter22(c,e,tp)
-	if c:IsLocation(LOCATION_EXTRA) and Duel.GetLocationCountFromEx(tp,tp,nil,c)==0 then return false end
-	return c:IsSetCard(SET_STARVING_VENOM) or c:IsCode(13331639) and c:IsMonster() and c:IsCanBeSpecialSummoned(e,0,tp,true,true)
+
+function s.extra_filter(c,e,tp)
+	if Duel.GetLocationCountFromEx(tp,tp,nil,c)==0 then return false end
+	local set = SET_STARVING_VENOM or 0x110f
+	return (c:IsSetCard(set) or c:IsCode(13331639)) and c:IsMonster() and c:IsCanBeSpecialSummoned(e,0,tp,true,true)
 end
+
 function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk)
 	local loc=LOCATION_EXTRA
-	if Duel.GetLocationCount(tp,LOCATION_MZONE)>0 then loc=loc|LOCATION_GRAVE|LOCATION_REMOVED end
-	if chk==0 then return loc~=0 and Duel.IsExistingMatchingCard(s.spfilter22,tp,loc,0,1,nil,e,tp) end
+	if Duel.GetLocationCount(tp,LOCATION_MZONE)>0 or Duel.GetMZoneCount(tp,e:GetHandler())>0 then
+		loc=loc+LOCATION_GRAVE+LOCATION_REMOVED
+	end
+	if chk==0 then 
+		local ex = Duel.IsExistingMatchingCard(s.extra_filter,tp,LOCATION_EXTRA,0,1,nil,e,tp)
+		local gy = Duel.IsExistingMatchingCard(s.bypass_filter,tp,LOCATION_GRAVE,0,1,nil)
+		local rm = Duel.IsExistingMatchingCard(s.bypass_filter,tp,LOCATION_REMOVED,0,1,nil)
+		return ex or gy or rm
+	end
 	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,loc)
 end
+
 function s.spop2(e,tp,eg,ep,ev,re,r,rp)
+	local c=e:GetHandler()
+	
 	local loc=LOCATION_EXTRA
-	if Duel.GetLocationCount(tp,LOCATION_MZONE)>0 then loc=loc|LOCATION_GRAVE|LOCATION_REMOVED end
-	if loc==0 then return end
+	if Duel.GetLocationCount(tp,LOCATION_MZONE)>0 then loc=loc+LOCATION_GRAVE+LOCATION_REMOVED end
 	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
-	local g=Duel.SelectMatchingCard(tp,s.spfilter22,tp,loc,0,1,1,nil,e,tp)
+	
+	local set = SET_STARVING_VENOM or 0x110f
+	
+	-- Menú de selección interactivo nativo limpio
+	local g=Duel.SelectMatchingCard(tp,function(tc)
+		if tc:IsLocation(LOCATION_EXTRA) then 
+			return s.extra_filter(tc,e,tp) 
+		elseif tc:IsLocation(LOCATION_GRAVE) then
+			return (tc:IsSetCard(set) or tc:IsCode(13331639)) and tc:IsMonster()
+		else
+			return tc:IsFaceup() and (tc:IsSetCard(set) or tc:IsCode(13331639)) and tc:IsMonster()
+		end
+	end,tp,loc,0,1,1,nil)
+	
 	if #g>0 then
-		Duel.SpecialSummon(g,0,tp,tp,true,true,POS_FACEUP)
+		local sc=g:GetFirst()
+		
+		if sc:IsLocation(LOCATION_EXTRA) then
+			Duel.SpecialSummon(sc,SUMMON_TYPE_FUSION,tp,tp,true,true,POS_FACEUP)
+		else
+			-- ESCENARIO B: Para cartas en Cementerio o Destierro (Salto directo sin tocar Extra Deck)
+			sc:ResetEffect(EFFECT_CANNOT_SPECIAL_SUMMON,RESET_COPY)
+			
+			if Duel.MoveToField(sc,tp,tp,LOCATION_MZONE,POS_FACEUP,true) then
+				-- Sella los registros oficiales de Fusión en la memoria del emulador antiguo
+				sc:SetStatus(STATUS_PROC_COMPLETE,true)
+				sc:SetStatus(STATUS_SPSUMMON_STEP,true)
+				
+				-- Dispara los radares globales de forma legal para que cuente como Invocación Especial Real
+				Duel.RaiseSingleEvent(sc,EVENT_SPSUMMON_SUCCESS,e,REASON_EFFECT,tp,tp,0)
+				Duel.RaiseEvent(sc,EVENT_SPSUMMON_SUCCESS,e,REASON_EFFECT,tp,tp,0)
+				Duel.SpecialSummonComplete()
+			end
+		end
 	end
 end
