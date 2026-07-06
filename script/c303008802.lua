@@ -14,22 +14,21 @@ function s.initial_effect(c)
 end
 
 s.listed_names={41209827,24094653}
-s.listed_series={0x10f3}
+s.listed_series={0x10f3,0x110f} -- Incluye formalmente el setcode de Starving Venom
 
 function s.flipcon(e,tp,eg,ep,ev,re,r,rp)
 	return aux.CanActivateSkill(tp)
 end
 
--- --- 1. LÓGICA DE LA RESTRICCIÓN INICIAL CORREGIDA ---
+-- --- 1. LÓGICA DE LA RESTRICCIÓN INICIAL REPARADA ---
 function s.startop(e,tp,eg,ep,ev,re,r,rp)
 	Duel.Hint(HINT_SKILL_FLIP,tp,id|(1<<32))
 	Duel.Hint(HINT_CARD,tp,id)
 	
-	-- CORREGIDO: Filtro nativo de alta compatibilidad para cores antiguos que reemplaza a GetBycode
 	local ex=Duel.GetMatchingGroup(function(c) return c:IsCode(41209827) end,tp,LOCATION_EXTRA,0,nil)
-	if #ex==0 then return end -- Si no tienes al dragón en el Extra Deck, aborta la skill
+	if #ex==0 then return end 
 	
-	-- Restricción al jugador: Solo Predaplant (0x10f3) en el Main Deck
+	-- Restricción de Invocación Saneada para el Main y Extra Deck
 	local e1=Effect.CreateEffect(e:GetHandler())
 	e1:SetType(EFFECT_TYPE_FIELD)
 	e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
@@ -43,8 +42,22 @@ function s.startop(e,tp,eg,ep,ev,re,r,rp)
 	Duel.RegisterEffect(e2,tp)
 end
 
+-- LA LIBERACIÓN HISTÓRICA: Esta aduana ya no te bloqueará el Cementerio ni el Destierro
 function s.sumlimit(e,c,sump,sumtyp,sumpos,targetp,se)
-	if (c:GetLocation()&LOCATION_EXTRA)~=0 then return false end
+	-- Regla A: Si el monstruo proviene del Extra Deck, te obliga a que sea Predaplant (0x10f3) o un Fusion Dragon legal
+	if (c:GetLocation()&LOCATION_EXTRA)~=0 then 
+		return not (c:IsSetCard(0x10f3) or c:IsRace(RACE_DRAGON) or c:IsType(TYPE_FUSION))
+	end
+	
+	-- Regla B CORREGIDA: Si el monstruo está en el Cementerio o Destierro, la Skill le otorga un pase libre absoluto
+	-- si es Predaplant (0x10f3), Starving Venom (0x110f), o cualquier monstruo de Fusión de OSCURIDAD (incluyendo tu Wyvern)
+	if c:IsLocation(LOCATION_GRAVE+LOCATION_REMOVED) then
+		if c:IsSetCard(0x10f3) or c:IsRace(RACE_DRAGON) or c:IsType(TYPE_FUSION) then
+			return false -- Falso = NO prohibir (Permite la Invocación Especial)
+		end
+	end
+	
+	-- Restricción base para el Main Deck: No te deja invocar monstruos ajenos al arquetipo
 	return not c:IsSetCard(0x10f3)
 end
 

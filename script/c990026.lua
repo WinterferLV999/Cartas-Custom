@@ -4,6 +4,7 @@ function s.initial_effect(c)
 	--link summon
 	c:EnableReviveLimit()
 	Link.AddProcedure(c,s.ffilter,1,1)
+	Link.AddProcedure(c,s.matfilter,1,1)
 	--Special Summon 1 Synchro Tuner monster from your Extra Deck
 	local e2=Effect.CreateEffect(c)
 	e2:SetDescription(aux.Stringid(id,1))
@@ -37,6 +38,9 @@ end
 function s.ffilter(c,lc,sumtype,tp)
 	return c:IsSetCard(0x27,lc,sumtype,tp) and c:IsType(TYPE_TUNER,lc,sumtype,tp)
 end
+function s.matfilter(c,lc,sumtype,tp)
+	return c:IsSetCard(0x27,lc,sumtype,tp)
+end
 --local no.2
 function s.condition(e,tp,eg,ep,ev,re,r,rp)
 	return Duel.IsTurnPlayer(1-tp) and (Duel.IsMainPhase() or Duel.IsBattlePhase())
@@ -63,7 +67,7 @@ function s.tncon(e)
 	return e:GetHandler():GetSummonType()==SUMMON_TYPE_LINK
 end
 function s.spfilter(c,e,tp)
-	return c:IsSetCard(0x27) and not c:IsType(TYPE_TUNER) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
+	return c:IsSetCard(0x27) and c:IsCanBeSpecialSummoned(e,0,tp,false,false) --and not c:IsType(TYPE_TUNER) 
 end
 function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return Duel.GetLocationCount(tp,LOCATION_MZONE)>0
