@@ -65,7 +65,7 @@ function s.destg(e,tp,eg,ep,ev,re,r,rp,chk)
 		return Duel.GetFlagEffect(tp,id)==0 and #g>0
 	end
 	e:SetLabel(#g)
-	return Duel.SelectEffectYesNo(tp,e:GetHandler(id,0))
+	return Duel.SelectEffectYesNo(tp,e:GetHandler())
 end
 function s.value(e,c)
 	return c:IsLocation(LOCATION_ONFIELD) and c:IsControler(e:GetHandlerPlayer())
