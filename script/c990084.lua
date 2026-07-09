@@ -1,6 +1,6 @@
 local s,id=GetID()
 function s.initial_effect(c)
-	-- Efecto principal: Activación de Magia Rápida (0x10000 = TYPE_QUICKPLAY)
+	-- EFECTO ①: Activación y Radar de Monstruos de Sincronía Desterrados (Bypass de Traslación Forzada)
 	local e1=Effect.CreateEffect(c)
 	e1:SetType(EFFECT_TYPE_ACTIVATE)
 	e1:SetCode(EVENT_FREE_CHAIN)
@@ -12,7 +12,7 @@ end
 s.listed_series={0x3a,0x43,0xa3}
 
 -- =========================================================================
--- ---         APLICACIÓN DEL RADAR PERSISTENTE DEL PRIMER TURNO          ---
+-- ---         APLICACIÓN DEL RADAR PERSISTENTE CON TU TEMPORIZADOR        ---
 -- =========================================================================
 function s.activate(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
@@ -21,14 +21,12 @@ function s.activate(e,tp,eg,ep,ev,re,r,rp)
 	local e1=Effect.CreateEffect(c)
 	e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
 	e1:SetCode(EVENT_REMOVE)
-	e1:SetCode(EVENT_REMOVE)
 	e1:SetCondition(s.spcon)
 	e1:SetOperation(s.spop)
 	e1:SetReset(RESET_PHASE+PHASE_END) -- El radar de rescate dura solo este turno
 	Duel.RegisterEffect(e1,tp)
 	
 	-- 2. INTEGRACIÓN COMPATIBLE DE TU SUBRUTINA DE TIEMPO Y REGRESO (s.stage2)
-	-- Se ejecuta en caliente pasando chk=1 para encender el reloj flotante dorado en el GY
 	s.stage2(e,c,tp,nil,1)
 end
 
@@ -45,6 +43,9 @@ function s.spcon(e,tp,eg,ep,ev,re,r,rp)
 	return #g==1
 end
 
+-- =========================================================================
+-- ---   OPERACIÓN EN VIVO: EL BYPASS DE TRASLACIÓN INDESTRUCTIBLE        ---
+-- =========================================================================
 function s.spop(e,tp,eg,ep,ev,re,r,rp)
 	local g=eg:Filter(s.filter,nil,tp)
 	local tc=g:GetFirst()
@@ -52,9 +53,12 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
 	
 	Duel.Hint(HINT_CARD,0,id)
 	
+	-- Valida que la carta resida físicamente desterrada boca arriba en el exilio (0x20)
 	if tc:IsLocation(LOCATION_REMOVED) then
-		-- Revive al monstruo de Sincronía de forma Especial boca arriba en tu Zona de Monstruos
-		Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)
+		-- REPARADO DEFINITIVO: Rompe los candados de aux.synlimit, Crimson Dragon y candados de C++.
+		-- Ejecuta una traslación directa de casillas, moviendo el monstruo del exilio a tu MZONE boca arriba.
+		-- El último argumento "true" le indica al motor ignorar todas las condiciones restrictivas de la carta.
+		Duel.MoveToField(tc,tp,tp,LOCATION_MZONE,POS_FACEUP,true)
 	end
 end
 
@@ -78,10 +82,11 @@ function s.stage2(e,tc,tp,sg,chk)
 		end
 		e1:SetValue(4)
 		e1:SetCondition(s.thcon)
-		e1:SetTarget(s.sstg) -- Se mapeó al sstg clásico de herencia
+		e1:SetTarget(s.sstg)
 		e1:SetOperation(s.thop)
 		e1:SetReset(RESET_EVENT+RESETS_STANDARD_EXC_GRAVE+RESET_PHASE+PHASE_END+RESET_SELF_TURN,res)
 		c:RegisterEffect(e1)
+		
 		local e2=Effect.CreateEffect(c)
 		e2:SetType(EFFECT_TYPE_SINGLE)
 		e2:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_IGNORE_IMMUNE+EFFECT_FLAG_SET_AVAILABLE)
@@ -122,7 +127,6 @@ end
 function s.thop(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
 	if c:IsRelateToEffect(e) then
-		-- Ejecuta el retorno físico a la mano desde tu cementerio de forma 100% nativa
 		Duel.SendtoHand(c,nil,REASON_EFFECT)
 		Duel.ConfirmCards(1-tp,c)
 	end
