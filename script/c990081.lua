@@ -10,7 +10,7 @@ function s.initial_effect(c)
 	e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
 	e1:SetCode(EFFECT_SYNCHRO_MATERIAL_CUSTOM)
 	e1:SetRange(LOCATION_MZONE)
-	e1:SetValue(s.synop)
+	e1:SetOperation(s.synop)
 	c:RegisterEffect(e1)
 	
 	-- EFECTO ②: Cambiar el Nivel de un Cantante bajo tu control (Del 1 al 5)
