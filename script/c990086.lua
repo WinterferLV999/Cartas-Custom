@@ -10,39 +10,57 @@ function s.initial_effect(c)
 	e1:SetTarget(s.target)
 	e1:SetOperation(s.activate)
 	c:RegisterEffect(e1)
+	
+	-- EFECTO ②: ACTIVACIÓN EN EL TURNO SET (REPARADO: COMPATIBILIDAD DE HARDWARE DE ID ANIME)
+	local e2=Effect.CreateEffect(c)
+	e2:SetDescription(aux.Stringid(id,0))
+	e2:SetType(EFFECT_TYPE_SINGLE)
+	e2:SetCode(EFFECT_TRAP_ACT_IN_SET_TURN)
+	e2:SetProperty(EFFECT_FLAG_SET_AVAILABLE) -- Propiedad reina que activa el brillo boca abajo
+	e2:SetCondition(s.actcon) -- Llama a tu aduana de verificación de mención
+	c:RegisterEffect(e2)
 end
 
--- CORREGIDO: Lista de arquetipos soportados utilizando tu macro oficial de sistema
+-- Lista de arquetipos soportados oficialmente en tu base de datos (Red Dragon Archfiend)
 s.listed_series={SET_RED_DRAGON_ARCHFIEND}
-
--- Filtro del líder: Busca monstruos "Red Dragon Archfiend" boca arriba en tu campo
-function s.cfilter(c)
-	-- CORREGIDO: Se inyectó tu constante exacta SET_RED_DRAGON_ARCHFIEND
-	return c:IsFaceup() and c:IsSetCard(SET_RED_DRAGON_ARCHFIEND)
-end
+-- ID Oficial del Red Dragon Archfiend clásico para habilitar el radar del Core
+s.listed_names={70902743}
 
 -- =========================================================================
--- ---         CONDICION DE ACTIVACIÓN PREMIUM (CALCADA DE TU PLANTILLA) ---
+-- ---   CONDICIÓN DE ACTIVACIÓN ①: OMNI-NEGACIÓN UNIVERSAL LIBRE         ---
 -- =========================================================================
 function s.condition(e,tp,eg,ep,ev,re,r,rp)
-	-- El oponente (1-tp) activa un efecto que se pueda negar, y tú controlas al líder en mesa
+	-- El oponente (1-tp) activa un efecto que se pueda negar de forma reglamentaria
+	-- Se mantiene libre e independiente si la carta ya lleva un turno colocada.
 	return rp==1-tp and Duel.IsChainNegatable(ev)
-		and Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_MZONE,0,1,nil)
+end
+
+-- =========================================================================
+-- ---   CONDICIÓN DEL EFECTO ②: TU ADUANA DE CORRECCIÓN POR ID FISICA   ---
+-- =========================================================================
+function s.actfilter(c)
+	if not c:IsFaceup() then return false end
+	-- CORREGIDO DEFINITIVO: Cambiamos el macro por la ID real del Red Demon original (70902743).
+	-- Tu servidor ahora leerá en limpio si la carta en campo menciona formalmente al líder del mazo.
+	return c:IsSetCard(SET_RED_DRAGON_ARCHFIEND) or c:ListsCode(70902743)
+end
+
+function s.actcon(e)
+	-- Evalúa si existe al menos 1 carta válida que mencione al líder boca arriba en tu tablero (LOCATION_ONFIELD)
+	return Duel.IsExistingMatchingCard(s.actfilter,e:GetHandlerPlayer(),LOCATION_ONFIELD,0,1,nil)
 end
 
 -- =========================================================================
 -- ---         ADUANA DE TARGET: DECLARACIÓN DE OPERACIONES EN RAM      ---
 -- =========================================================================
 function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
-	-- Sincronizado con tu referencia: chk==0 valida si el motor te permite robar las 2 cartas
 	if chk==0 then return Duel.IsPlayerCanDraw(tp,2) end
 	
-	-- Prepara los reportes del sistema para la animación visual interactiva en la pantalla
 	if e:IsHasCategory(CATEGORY_NEGATE) then
 		Duel.SetOperationInfo(0,CATEGORY_NEGATE,eg,1,0,0)
 	end
 	Duel.SetOperationInfo(0,CATEGORY_DESTROY,eg,1,0,0)
-	Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,2) -- Exige estrictamente preparar el robo de 2
+	Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,2) -- Prepara el robo obligatorio de 2
 end
 
 -- =========================================================================
@@ -54,11 +72,11 @@ function s.activate(e,tp,eg,ep,ev,re,r,rp)
 	-- PASO A: Niega la activación del efecto de la carta enemiga en la cadena actual
 	if Duel.NegateActivation(ev) and rc:IsRelateToEffect(re) then
 		
-		-- PASO B: Hace estallar y destruye físicamente el cartón del oponente
+		-- PASO B: Hace estallar y destruye físicamente el cartón del oponente en la mesa
 		if Duel.Destroy(eg,REASON_EFFECT)>0 then
 			Duel.BreakEffect() -- La pausa visual estética oficial de Konami que asienta los datos
 			
-			-- PASO C: Robas de forma obligatoria 2 cartas de tu baraja de forma limpia y consecutiva
+			-- PASO C: Robas de forma obligatoria 2 cartas de tu baraja de forma limpia
 			Duel.Draw(tp,2,REASON_EFFECT)
 		end
 	end
