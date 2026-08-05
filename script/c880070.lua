@@ -25,14 +25,14 @@ function s.initial_effect(c)
     e1:SetOperation(s.spop)
     c:RegisterEffect(e1)
 	--cannot destroyed
-	local e2=Effect.CreateEffect(c)
-	e2:SetType(EFFECT_TYPE_SINGLE)
-	e2:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
-	e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)
-	e2:SetRange(LOCATION_MZONE)
-	e2:SetCondition(s.indcon)
-	e2:SetValue(1)
-	c:RegisterEffect(e2)
+	--local e2=Effect.CreateEffect(c)
+	--e2:SetType(EFFECT_TYPE_SINGLE)
+	--e2:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
+	--e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)
+	--e2:SetRange(LOCATION_MZONE)
+	--e2:SetCondition(s.indcon)
+	--e2:SetValue(1)
+	--c:RegisterEffect(e2)
 	local e3=Effect.CreateEffect(c)
 	e3:SetType(EFFECT_TYPE_SINGLE)
 	e3:SetProperty(EFFECT_FLAG_SINGLE_RANGE)
@@ -105,6 +105,7 @@ function s.initial_effect(c)
 	end)
 end
 s.xyz_number=107
+s.listed_series={SET_NUMBER}
 function s.regcon(e,tp,eg,ep,ev,re,r,rp)
 	return Duel.GetCurrentPhase()>=PHASE_BATTLE_START and Duel.GetCurrentPhase()<=PHASE_BATTLE
 end

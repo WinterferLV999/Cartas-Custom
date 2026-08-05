@@ -89,13 +89,27 @@ function s.selfeqtg(e, tp, eg, ep, ev, re, r, rp, chk)
     Duel.SetOperationInfo(0, CATEGORY_EQUIP, e:GetHandler(), 1, 0, 0)
 end
 
-function s.selfeqop(e, tp, eg, ep, ev, re, r, rp)
-    local c = e:GetHandler()
-    if not c:IsRelateToEffect(e) then return end
-    local g = Duel.GetFieldGroup(tp, LOCATION_MZONE, 0)
-    local tc = g:GetFirst()
-    if #g == 1 and tc and tc:IsFaceup() and tc:IsCode(88177324) then
-        Duel.Equip(tp, c, tc)
-    end
+function s.selfeqop(e,tp,eg,ep,ev,re,r,rp)
+	local c=e:GetHandler()
+	if not c:IsRelateToEffect(e) then return end
+	local g=Duel.GetFieldGroup(tp,LOCATION_MZONE,0)
+	local tc=g:GetFirst()
+	if #g==1 and tc and tc:IsFaceup() and tc:IsCode(88177324) then
+		if Duel.Equip(tp,c,tc) then
+			-- CANDADO: Bloquea las Invocaciones Especiales por el resto del turno, excepto monstruos Xyz
+			local e1=Effect.CreateEffect(c)
+			e1:SetType(EFFECT_TYPE_FIELD)
+			e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)
+			e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_CLIENT_HINT)
+			e1:SetDescription(aux.Stringid(id,1)) -- Añade un icono visual en tu pantalla de duelo
+			e1:SetTargetRange(1,0)
+			e1:SetTarget(s.splimit)
+			e1:SetReset(RESET_PHASE+PHASE_END) -- El candado desaparece en la End Phase
+			Duel.RegisterEffect(e1,tp)
+		end
+	end
 end
-
+function s.splimit(e,c,sump,sumtype,sumpos,targetp,se)
+	-- Permite Invocar de Modo Especial únicamente si el monstruo destino es de Tipo XYZ
+	return not c:IsType(TYPE_XYZ)
+end
