@@ -103,6 +103,18 @@ function s.initial_effect(c)
 			BPResolvedEffects={}
 		end)
 	end)
+	local e9=Effect.CreateEffect(c)
+	e9:SetType(EFFECT_TYPE_SINGLE)
+	e9:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+	e9:SetCode(EFFECT_ADD_SETCODE)
+	e9:SetValue(0x1555)
+	c:RegisterEffect(e9)
+	local e10=Effect.CreateEffect(c)
+	e10:SetType(EFFECT_TYPE_SINGLE)
+	e10:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_UNCOPYABLE)
+	e10:SetCode(EFFECT_ADD_SETCODE)
+	e10:SetValue(0x155)
+	c:RegisterEffect(e10)
 end
 s.xyz_number=107
 s.listed_series={SET_NUMBER}
