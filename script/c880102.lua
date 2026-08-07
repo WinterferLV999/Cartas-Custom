@@ -45,6 +45,7 @@ function s.initial_effect(c)
 	c:RegisterEffect(e3)
 end
 
+s.xyz_number=107
 -- Lista de identidades asociadas utilizando tus macros y códigos reales de tu base de datos
 s.listed_series={SET_TACHYON,0x95} -- 0x95 es la máscara de bits universal de las "Rank-Up-Magic"
 s.listed_names={88177324,57734012} -- Number 107, The Seventh One

@@ -119,15 +119,27 @@ end
 s.xyz_number=107
 s.listed_series={SET_NUMBER}
 function s.regcon(e,tp,eg,ep,ev,re,r,rp)
-	return Duel.GetCurrentPhase()>=PHASE_BATTLE_START and Duel.GetCurrentPhase()<=PHASE_BATTLE
+	local phase=Duel.GetCurrentPhase()
+	return phase>=PHASE_BATTLE_START and phase<=PHASE_BATTLE
 end
+
 function s.regop(e,tp,eg,ep,ev,re,r,rp)
+	-- Localiza la ID de campo única de este dragón como el dueño de la tabla
 	local cid=e:GetOwner():GetFieldID()
 	if not BPResolvedEffects[cid] then BPResolvedEffects[cid]={} end
-	for _,fid in ipairs(BPResolvedEffects[cid]) do
-		if fid==re:GetHandler():GetFieldID() then return end
+	
+	-- CAPTURA MAESTRA DE HARDWARE: Extraemos el número único de resolución de esta cadena (ChainID)
+	-- Esto captura CUALQUIER activación individual, eliminando el bug de cartas repetidas o enviadas al GY.
+	local ch_id=Duel.GetChainInfo(ev,CHAININFO_CHAIN_ID)
+	if not ch_id then return end
+	
+	-- Escanea si este eslabón específico ya fue procesado para evitar duplicados visuales
+	for _,saved_id in ipairs(BPResolvedEffects[cid]) do
+		if saved_id==ch_id then return end
 	end
-	table.insert(BPResolvedEffects[cid],re:GetHandler():GetFieldID())
+	
+	-- Inyecta el eslabón de la cadena resuelto con éxito en la lista de Taquiones
+	table.insert(BPResolvedEffects[cid],ch_id)
 end
 --Local no.1
 
@@ -138,9 +150,19 @@ function s.cfilter(c,tp,e)
 end
 
 function s.condition(e,tp,eg,ep,ev,re,r,rp)
+    -- Paso A: Extrae la información de destrucción de la cadena actual
     local ex,tg,tc=Duel.GetOperationInfo(ev,CATEGORY_DESTROY)
+    -- Si el efecto no destruye cartas, la aduana se cierra de inmediato
     if not ex then return false end
-    -- Pasamos "e" al final para que el filtro lo reconozca
+    
+    -- Paso B: REPARADO DEFINITIVO. Si hay objetivos designados (tg), el script escanea 
+    -- si el Galaxy-Eyes equipado reside dentro del grupo que va a ser destruido.
+    if tg then
+        return tg:IsExists(s.cfilter,1,nil,tp,e)
+    end
+    
+    -- Paso C: Protección para efectos globales (como Dark Hole). Si el efecto no designa targets 
+    -- pero va a destruir todo el campo, audita si tienes al Galaxy-Eyes equipado en tu mesa.
     return Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_MZONE,0,1,nil,tp,e)
 end
 
@@ -227,7 +249,7 @@ function s.csbtv(e,c)
 end
 --Local no.6
 function s.atktg(e,c)
-	return not c:IsCode(88177324)
+	return not c:IsCode(880070)
 end
 --Local no.7
 function s.con(e,tp,eg,ep,ev,re,r,rp)

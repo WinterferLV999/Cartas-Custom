@@ -67,8 +67,8 @@ s.xyz_number=107
 s.listed_series={SET_GALAXY_EYES,SET_GALAXY_EYES_TACHYON_DRAGON,SET_NUMBER_C}
 --Local no.3
 function s.cost(e,tp,eg,ep,ev,re,r,rp,chk)
-	if chk==0 then return e:GetHandler():CheckRemoveOverlayCard(tp,1,REASON_COST) end
-	e:GetHandler():RemoveOverlayCard(tp,1,1,REASON_COST)
+	if chk==0 then return e:GetHandler():CheckRemoveOverlayCard(tp,2,REASON_COST) end
+	e:GetHandler():RemoveOverlayCard(tp,2,2,REASON_COST)
 end
 function s.filter3(c)
 	return c:IsFaceup() and c:IsType(TYPE_EFFECT)
