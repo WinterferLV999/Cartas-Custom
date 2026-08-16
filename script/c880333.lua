@@ -79,58 +79,11 @@ function s.negtg(e,tp,eg,ep,ev,re,r,rp,chk)
 	end
 end
 
--- Operación unificada con la lógica global de Called by the Grave
+-- REPARADO DEFINITIVO: Operación limpia que solo niega y destruye, libre de subrutinas continuas de campo
 function s.negop(e,tp,eg,ep,ev,re,r,rp)
-	local c=e:GetHandler()
-	local rc=re:GetHandler()
-	
-	-- 1. Negamos la activación actual de la cadena
-	if Duel.NegateActivation(ev) and rc:IsRelateToEffect(re) then
-		-- Guardamos el nombre original de la carta antes de destruirla
-		local code=rc:GetOriginalCodeRule()
-		
-		-- 2. Destruimos la carta de forma inmediata
-		if Duel.Destroy(eg,REASON_EFFECT)>0 then
-			
-			-- 3. ESCUDO GLOBAL (Estilo Called by the Grave):
-			-- e1: Apaga de forma continua monstruos con ese nombre en el campo
-			local e1=Effect.CreateEffect(c)
-			e1:SetType(EFFECT_TYPE_FIELD)
-			e1:SetCode(EFFECT_DISABLE)
-			e1:SetTargetRange(LOCATION_MZONE,LOCATION_MZONE)
-			e1:SetTarget(s.distg)
-			e1:SetLabel(code)
-			e1:SetReset(RESET_PHASE|PHASE_END) -- Cambiado a un solo turno (Fin de este turno)
-			Duel.RegisterEffect(e1,tp)
-			
-			-- e2: Intercepta y niega cualquier efecto con ese nombre que intente resolver en GY, Mano o Destierro
-			local e2=Effect.CreateEffect(c)
-			e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
-			e2:SetCode(EVENT_CHAIN_SOLVING)
-			e2:SetCondition(s.discon)
-			e2:SetOperation(s.disop)
-			e2:SetLabel(code)
-			e2:SetReset(RESET_PHASE|PHASE_END) -- Fin de este turno
-			Duel.RegisterEffect(e2,tp)
-		end
+	if Duel.NegateActivation(ev) then
+		Duel.Destroy(eg,REASON_EFFECT)
 	end
-end
-
--- Funciones auxiliares globales del escudo
-function s.distg(e,c)
-	local code=e:GetLabel()
-	local code1,code2=c:GetOriginalCodeRule()
-	return code1==code or code2==code
-end
-function s.discon(e,tp,eg,ep,ev,re,r,rp)
-	local code=e:GetLabel()
-	local code1,code2=re:GetHandler():GetOriginalCodeRule()
-	-- Se aplica a efectos de monstruo, magia o trampa que tengan el mismo ID original
-	return code1==code or code2==code
-end
-function s.disop(e,tp,eg,ep,ev,re,r,rp)
-	Duel.Hint(HINT_CARD,0,id)
-	Duel.NegateEffect(ev) -- Apaga la resolución de forma nativa e instantánea
 end
 
 -- --- LÓGICA DE RECICLAJE (e3) ---

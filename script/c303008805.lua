@@ -67,8 +67,18 @@ function s.startop(e, tp, eg, ep, ev, re, r, rp)
 	e:Reset()
 end
 
+-- =========================================================================
+-- --- ADUANA DE CONTROL DE INVOCACIONES SANEADA SIN BUGS DE CEMENTERIO  ---
+-- =========================================================================
 function s.sumlimit(e, c, sump, sumtyp, sumpos, targetp, se)
+	-- REPARADO: Si el monstruo es un Xyz Tipo Dragón y su Rango es 4 u 8, el Core le da paso libre de inmediato.
+	-- Esto soluciona el bache y te permite revivir legalmente a Number 107 desde el Cementerio o Destierro.
+	if c:IsType(TYPE_XYZ) and c:IsRace(RACE_DRAGON) and (c:GetRank() == 4 or c:GetRank() == 8) then return false end
+	
+	-- Mantiene la libertad nativa para invocar CUALQUIER Dragón directamente desde el Extra Deck
 	if c:IsLocation(LOCATION_EXTRA) and c:IsRace(RACE_DRAGON) then return false end
+	
+	-- Regla estándar para monstruos de Main Deck: Exige Dragón LUZ/OSCURIDAD de Nivel 4 u 8
 	if c:IsRace(RACE_DRAGON) and (c:IsAttribute(ATTRIBUTE_LIGHT) or c:IsAttribute(ATTRIBUTE_DARK))
 		and (c:IsLevel(4) or c:IsLevel(8)) then
 		return false
@@ -88,7 +98,7 @@ function s.drawcon(e, tp, eg, ep, ev, re, r, rp)
 		and Duel.IsExistingMatchingCard(Card.IsCode, tp, LOCATION_DECK, 0, 1, nil, 57734012)
 end
 
-function s.drawop(e, tp, eg, ep, ev, re, r, rp)
+function s.drawop(e, tp, eg, ep, ev,re,r,rp)
 	if not Duel.SelectYesNo(tp, aux.Stringid(id, 0)) then return end
 	
 	local dt = Duel.GetDrawCount(tp)

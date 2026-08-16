@@ -129,16 +129,12 @@ function s.atkcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	e:GetHandler():RemoveOverlayCard(tp,1,1,REASON_COST)
 end
 
--- Filtro nativo para escanear monstruos boca arriba en resolución con ATK mayor a 0
 function s.tgfilter(c)
 	return c:IsFaceup() and c:GetAttack()>0
 end
 
 function s.atktg(e,tp,eg,ep,ev,re,r,rp,chk)
-	-- Al no seleccionar, chk==0 solo valida que EXISTA al menos un objetivo legal en el campo
 	if chk==0 then return Duel.IsExistingMatchingCard(s.tgfilter,tp,0,LOCATION_MZONE,1,nil) end
-	
-	-- Declaramos las categorías vacías en el target ya que el valor exacto se sabrá en la resolución
 	Duel.SetOperationInfo(0,CATEGORY_RECOVER,nil,0,tp,0)
 	Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,0)
 end
@@ -146,34 +142,34 @@ end
 function s.atkop(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
 	
-	-- ELECCIÓN EN RESOLUCIÓN: El jugador escoge al monstruo rival en este momento exacto.
-	-- Tu oponente ya no puede encadenar nada en respuesta a esta elección.
+	-- ANTIDISEÑO DE SELECCIÓN: Se elige en resolución para burlar los escudos del oponente
 	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATTACK)
 	local g=Duel.SelectMatchingCard(tp,s.tgfilter,tp,0,LOCATION_MZONE,1,1,nil)
 	local tc=g:GetFirst()
 	
-	-- Verifica el objetivo en mesa respetando las inmunidades nativas
 	if tc and tc:IsFaceup() and not tc:IsImmuneToEffect(e) then
-		-- Guarda el ATK exacto antes de reducirlo a cero
+		-- Guardamos el ATK real en la caché inmune de la RAM antes de alterar el campo
 		local atk=tc:GetAttack()
+		if atk<=0 then return end
 		
-		-- Clava su ATK final en cero usando la constante reglamentaria
+		-- Clava su ATK final en cero en la simulación
 		local e1=Effect.CreateEffect(c)
 		e1:SetType(EFFECT_TYPE_SINGLE)
 		e1:SetCode(EFFECT_SET_ATTACK_FINAL)
 		e1:SetValue(0)
-		e1:SetReset(RESETS_STANDARD)
+		-- REPARADO DEFINITIVO: RESET_EVENT + RESETS_STANDARD obliga al Core de C++ a destruir
+		-- este efecto inmediatamente si la carta cambia de zona (Cementerio, Mano, Destierro, etc.).
+		-- Al volver a ser invocado, el monstruo recuperará sus estadísticas normales de fábrica.
+		e1:SetReset(RESET_EVENT+RESETS_STANDARD)
 		tc:RegisterEffect(e1)
 		
-		-- Mecánica encadenada: Si el ATK cambió exitosamente a 0
-		if tc:GetAttack()==0 and atk>0 then
-			Duel.BreakEffect() -- Breve pausa visual estética de Konami
-			
-			-- 1. Recuperas LP igual al ATK que el monstruo oponente perdió
-			if Duel.Recover(tp,atk,REASON_EFFECT)>0 then
-				-- 2. El oponente toma daño directo igual al ATK perdido
-				Duel.Damage(1-tp,atk,REASON_EFFECT)
-			end
+		-- Ejecución matemática indestructible basada en la variable local 'atk'
+		Duel.BreakEffect() -- Breve pausa visual estética de Konami
+		
+		-- 1. Recuperas LP igual al ATK que el monstruo oponente perdió
+		if Duel.Recover(tp,atk,REASON_EFFECT)>0 then
+			-- 2. El oponente toma daño directo equivalente de forma obligatoria
+			Duel.Damage(1-tp,atk,REASON_EFFECT)
 		end
 	end
 end
