@@ -69,7 +69,7 @@ end
 s.listed_names={CARD_RA,CARD_OBELISK,CARD_SLIFER}
 --Local No.2,3
 function s.filter(c)
-	return c:IsFaceup() and c:IsCode(CARD_RA,CARD_OBELISK,CARD_SLIFER,10000080,10000090,511000237)
+	return c:IsFaceup() and (c:IsSetCard(SET_THE_WINGED_DRAGON_OF_RA) or c:IsCode(CARD_RA,CARD_OBELISK,CARD_SLIFER,511000237))
 end
 function s.ptcon(e)
 	return Duel.IsExistingMatchingCard(s.filter,e:GetHandlerPlayer(),LOCATION_MZONE,0,1,nil)

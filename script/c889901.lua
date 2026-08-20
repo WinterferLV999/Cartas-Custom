@@ -42,7 +42,7 @@ end
 s.listed_names={CARD_RA}
 --Local No.1
 function s.spfilter(c,e,tp)
-	return c:GetAttack()==0 and (c:IsCode(CARD_RA) or c:IsCode(511000237))
+	return c:GetAttack()==0 and (c:IsSetCard(SET_THE_WINGED_DRAGON_OF_RA) or c:IsCode(511000237))
 	--return c:IsCode(CARD_RA) and c:GetAttack()==0
 end
 function s.target(e,tp,eg,ep,ev,re,r,rp,chk,chkc)

@@ -50,13 +50,14 @@ function s.initial_effect(c)
 	c:RegisterEffect(e4)
 end
 s.listed_names={CARD_RA,CARD_OBELISK,CARD_SLIFER}
+s.listed_series={SET_THE_WINGED_DRAGON_OF_RA}
 --Local No.1
 function s.tgcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return Duel.CheckLPCost(tp,1000) end
 	Duel.PayLPCost(tp,1000)
 end
 function s.rafilter(c)
-	return c:IsFaceup() and (c:IsCode(CARD_RA,10000080,10000090) or c:IsCode(511000237))
+	return c:IsFaceup() and (c:IsCode(SET_THE_WINGED_DRAGON_OF_RA) or c:IsCode(CARD_RA) or c:IsCode(511000237,513000134))
 end
 function s.ra(e,tp,eg,ep,ev,re,r,rp)
 	return (re:IsMonsterEffect() or re:IsHasType(EFFECT_TYPE_ACTIVATE)) and Duel.IsChainNegatable(ev)
