@@ -57,7 +57,7 @@ function s.tgcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	Duel.PayLPCost(tp,1000)
 end
 function s.rafilter(c)
-	return c:IsFaceup() and (c:IsCode(SET_THE_WINGED_DRAGON_OF_RA) or c:IsCode(CARD_RA) or c:IsCode(511000237,513000134))
+	return c:IsFaceup() and (c:IsCode(SET_THE_WINGED_DRAGON_OF_RA) or c:IsCode(CARD_RA) or c:IsCode(511000237,513000134,10000090,10000080,101403130))
 end
 function s.ra(e,tp,eg,ep,ev,re,r,rp)
 	return (re:IsMonsterEffect() or re:IsHasType(EFFECT_TYPE_ACTIVATE)) and Duel.IsChainNegatable(ev)
