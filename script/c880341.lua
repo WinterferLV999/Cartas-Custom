@@ -4,7 +4,7 @@ function s.initial_effect(c)
 	c:EnableReviveLimit()
 	
 	-- PROCEDIMIENTO BASE NATIVO: 1 Cantante OSCURIDAD + 1 Monstruo Sincronía No Cantante
-	Synchro.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsAttribute,ATTRIBUTE_DARK),1,1,aux.FilterBoolFunction(Card.IsCode,70771599),1,1
+	Synchro.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsAttribute,ATTRIBUTE_DARK),1,1,aux.FilterBoolFunction(Card.IsCode,70771599),1,1)
 	
 	-- =========================================================================
 	-- --- EFECTO ① (MANUSCRITO): INTERCEPCIÓN EN EL EXTRA DECK (COSTO HÍBRIDO) ---
@@ -209,7 +209,7 @@ function s.spcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	Duel.SendtoDeck(e:GetHandler(),nil,0,REASON_COST)
 end
 function s.spfilter2(c,e,tp)
-	return c:IsFaceup() and c:IsSetCard(SET_STARVING_VENOM) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
+	return c:IsFaceup() and c:IsSetCard(SET_CLEAR_WING) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
 end
 function s.spfilter22(c,e,tp)
 	if c:IsLocation(LOCATION_EXTRA) and Duel.GetLocationCountFromEx(tp,tp,nil,c)==0 then return false end
