@@ -39,10 +39,6 @@ s.listed_names={13331639}
 function s.cfilter(c,tp)
 	return c:IsOnField() and c:IsSetCard(0xf8) and c:IsControler(tp)
 end
-
--- =========================================================================
--- --- ADUANA DE MONITOREO DE CATEGORÍAS (TU CÓDIGO ORIGINAL SEGURO)     ---
--- =========================================================================
 function s.condition(e,tp,eg,ep,ev,re,r,rp)
 	if tp==ep or not Duel.IsChainNegatable(ev) then return false end
 	
@@ -67,52 +63,53 @@ function s.condition(e,tp,eg,ep,ev,re,r,rp)
 	end
 	return false
 end
-
--- =========================================================================
--- --- TARGETS CON FORMATO DE REGISTRO TACHYON TRANSMIGRATION          ---
--- =========================================================================
 function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return true end
-	local ng=Group.CreateGroup()
-	local dg=Group.CreateGroup()
 	
-	-- Recorre la cadena entera buscando eslabones del rival para armar las pilas en la RAM
-	for i=1,ev do
-		local te,tgp=Duel.GetChainInfo(i,CHAININFO_TRIGGERING_EFFECT,CHAININFO_TRIGGERING_PLAYER)
-		if tgp~=tp and Duel.IsChainNegatable(i) then
-			local tc=te:GetHandler()
-			ng:AddCard(tc)
-			-- Si la carta cumple las leyes de hardware para ir al mazo, la mete al grupo de barajado
-			if tc:IsOnField() and tc:IsRelateToEffect(te) and not tc:IsHasEffect(EFFECT_CANNOT_TO_DECK) and Duel.IsPlayerCanSendtoDeck(tp,tc) then
-				dg:AddCard(tc)
-			end
-		end
+	-- Captura la carta exacta que originó la activación de este eslabón enemigo
+	local rc=re:GetHandler()
+	
+	-- Informamos al Core clásico en C++ de las dos categorías que se ejecutarán
+	Duel.SetOperationInfo(0,CATEGORY_DISABLE,eg,1,0,0)
+	
+	-- SANEADO: Si la carta enemiga es legalmente barajable en el mazo, la registra en el búfer
+	if rc:IsAbleToDeck() and rc:IsRelateToEffect(re) and not rc:IsHasEffect(EFFECT_CANNOT_TO_DECK) and Duel.IsPlayerCanSendtoDeck(tp,rc) then
+		Duel.SetOperationInfo(0,CATEGORY_TODECK,eg,1,0,0)
 	end
-	Duel.SetTargetCard(dg)
-	Duel.SetOperationInfo(0,CATEGORY_NEGATE,ng,#ng,0,0)
-	Duel.SetOperationInfo(0,CATEGORY_TODECK,dg,#dg,0,0)
 end
 
--- =========================================================================
--- --- OPERACIÓN DEFINITIVA CON CANCELTOGRAVE (MÉTODO MIZAR INDESTRUCTIBLE)---
--- =========================================================================
 function s.activate(e,tp,eg,ep,ev,re,r,rp)
-	local dg=Group.CreateGroup()
+	-- Captura el puntero dinámico de la carta del rival en la RAM
+	local rc=re:GetHandler()
 	
-	-- Ejecuta el bucle de resolución eslabón por eslabón de la cadena
-	for i=1,ev do
-		local te,tgp=Duel.GetChainInfo(i,CHAININFO_TRIGGERING_EFFECT,CHAININFO_TRIGGERING_PLAYER)
-		if tgp~=tp and Duel.NegateActivation(i) then
-			local tc=te:GetHandler()
-			if tc:IsRelateToEffect(e) and tc:IsRelateToEffect(te) and not tc:IsHasEffect(EFFECT_CANNOT_TO_DECK) and Duel.IsPlayerCanSendtoDeck(tp,tc) then
-				-- EL SECRETO DE HARDWARE: Borra el flag de ir al cementerio del rival en la caché
-				tc:CancelToGrave()
-				dg:AddCard(tc)
-			end
+	-- Negamos de forma legítima ÚNICAMENTE la activación de este eslabón actual
+	if Duel.NegateActivation(ev) then
+		
+		-- Inyectamos los apagadores de estados continuos en la RAM sobre la carta enemiga
+		local e8=Effect.CreateEffect(e:GetHandler())
+		e8:SetType(EFFECT_TYPE_SINGLE)
+		e8:SetCode(EFFECT_DISABLE)
+		e8:SetReset(RESET_EVENT+RESETS_STANDARD)
+		rc:RegisterEffect(e8,true)
+		
+		local e9=Effect.CreateEffect(e:GetHandler())
+		e9:SetType(EFFECT_TYPE_SINGLE)
+		e9:SetCode(EFFECT_DISABLE_EFFECT)
+		e9:SetReset(RESET_EVENT+RESETS_STANDARD)
+		rc:RegisterEffect(e9,true)
+		
+		-- COMPATIBILIDAD CON CARD DE REFERENCIA DE HARDWARE: 
+		-- Validamos que la carta siga físicamente relacionada a su efecto antes del traslado
+		if rc:IsRelateToEffect(re) and not rc:IsHasEffect(EFFECT_CANNOT_TO_DECK) and Duel.IsPlayerCanSendtoDeck(tp,rc) then
+			
+			-- EL SECRETO REVELADO DE HARDWARE: Borra el flag de ir al cementerio del rival en la caché.
+			-- Esto evita que Magias Normales o Trampas Normales saboteen la redirección de bits.
+			rc:CancelToGrave()
+			
+			-- Envía la carta individual al mazo del oponente y ejecuta un barajado nativo inmediato (SEQ_DECKSHUFFLE)
+			Duel.SendtoDeck(rc,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)
 		end
 	end
-	-- Envía todo el grupo masivo al mazo y baraja de forma 100% exitosa y real en tu pantalla
-	Duel.SendtoDeck(dg,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)
 end
 
 -- =========================================================================

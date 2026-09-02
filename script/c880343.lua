@@ -27,45 +27,39 @@ end
 
 s.listed_names={96227613} 
 s.listed_series={SET_SUPREME_KING_GATE, SET_SUPREME_KING_DRAGON}
-
--- =========================================================================
--- --- RESOLUCIÓN LOGICA DEL EFECTO DE PÉNDULO (COMPLETAMENTE ESTABLE)    ---
--- =========================================================================
 function s.pcfilter(c)
-	-- Filtra monstruos Péndulo de la familia Supreme King Gate que no estén prohibidos
 	if c:IsLocation(LOCATION_EXTRA) and c:IsFacedown() then return false end
-	
-	-- REPARADO DEFINITIVO: La directiva 'and not c:IsCode(id)' EXPULSA a este monstruo
-	-- de las opciones jugables, impidiendo que el sistema te deje seleccionarlo o desplazarlo.
 	return c:IsSetCard(SET_SUPREME_KING_GATE) and c:IsType(TYPE_PENDULUM) 
 		and not c:IsForbidden() and not c:IsCode(id)
 end
 
 function s.pctg(e,tp,eg,ep,ev,re,r,rp,chk)
-	-- Habilita el botón interactivo en azul brillante si hay zonas libres y blancos válidos en las 4 zonas
 	if chk==0 then return Duel.CheckPendulumZones(tp)
 		and Duel.IsExistingMatchingCard(s.pcfilter,tp,LOCATION_HAND+LOCATION_DECK+LOCATION_GRAVE+LOCATION_EXTRA,0,1,nil) end
 end
 
 function s.pcop(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
-	-- Si la carta dejó la Zona de Péndulo antes de la resolución, detiene la operación por seguridad
 	if not c:IsRelateToEffect(e) or not Duel.CheckPendulumZones(tp) then return end
-	local my_seq=c:GetSequence()
 	
-	-- 🚀 DESPLAZAMIENTO 1: Seleccionamos el primer Gate desde tu Mano, Deck, GY o Extra Deck boca arriba (Excluyendo esta carta)
+	-- =========================================================================
+	-- --- CORRECCIÓN DEFINITIVA DE CASILLA: CAPTURA POR PUNTERO FIJO EN BUFFER --
+	-- =========================================================================
+	-- SANEADO MAESTRO: Guardamos a esta carta física directamente en la variable 'handler'.
+	-- Eliminamos 'GetSequence()', blindando el script contra los baches lógicos de la casilla derecha.
+	local handler = c
+	
 	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_TOFIELD)
 	local g=Duel.SelectMatchingCard(tp,s.pcfilter,tp,LOCATION_HAND+LOCATION_DECK+LOCATION_GRAVE+LOCATION_EXTRA,0,1,1,nil)
 	local tc=g:GetFirst()
 	
 	if tc then
-		-- Capturamos la ID exacta en la caché inmune antes de alterar su estado físico
 		local card_code=tc:GetCode()
 		
-		-- Mueve la carta seleccionada directamente a tu Zona de Péndulo vacía
+		-- Mueve la primera carta seleccionada a tu otra Zona de Péndulo libre
 		if Duel.MoveToField(tc,tp,tp,LOCATION_PZONE,POS_FACEUP,true) then
 			
-			-- --- EL INYECTOR DE NEGACIÓN EN LA RANURA MÁGICA ---
+			-- --- EL INYECTOR DE NEGACIÓN EN LA RANURA MÁGICA 1 ---
 			local e1=Effect.CreateEffect(c)
 			e1:SetType(EFFECT_TYPE_SINGLE)
 			e1:SetCode(EFFECT_DISABLE)
@@ -78,26 +72,24 @@ function s.pcop(e,tp,eg,ep,ev,re,r,rp)
 			e2:SetReset(RESET_EVENT+RESETS_STANDARD+RESET_PHASE+PHASE_END)
 			tc:RegisterEffect(e2)
 			
-			-- =========================================================================
-			-- --- RELEVOS DE HARDWARE: BUCLE CONDICIONAL POR COORDENADA DE CASILLA   ---
-			-- =========================================================================
-			-- Si el código de caché coincide con Gate Zero (96227613), abre el menú interactivo
-			if card_code==96227613 and Duel.SelectYesNo(tp,aux.Stringid(id,0)) then
+			-- Si el código de origen es Gate Zero (96227613) y te quedan recursos en el mazo, abre el sub-menú
+			if card_code==96227613 
+				and Duel.IsExistingMatchingCard(s.pcfilter,tp,LOCATION_HAND+LOCATION_DECK+LOCATION_GRAVE+LOCATION_EXTRA,0,1,nil)
+				and Duel.SelectYesNo(tp,aux.Stringid(id,0)) then
 				
-				-- Localiza físicamente la ranura por su secuencia original (my_seq)
-				local dc=Duel.GetFieldCard(tp,LOCATION_PZONE,my_seq)
-				
-				-- Revienta la carta de la Habilidad liberando la casilla al instante en la RAM
-				if dc and Duel.Destroy(dc,REASON_EFFECT)>0 then
+				-- BYPASS DE HARDWARE CONQUISTADO: Le ordenamos a la RAM reventar directamente al 'handler'.
+				-- Al estar amarrado al puntero original, el Core clásico dará VERDADERO de forma indestructible 
+				-- tanto en el lado izquierdo como en el lado derecho de tus casillas mágicas.
+				if handler and Duel.Destroy(handler,REASON_EFFECT)>0 then
 					
-					-- 🚀 DESPLAZAMIENTO 2: Trae el segundo Gate desde cualquiera de las 4 zonas expandidas (Excluyendo esta carta)
+					-- 🚀 DESPLAZAMIENTO 2: Traemos la segunda puerta desde cualquiera de las 4 zonas expandidas
 					Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_TOFIELD)
 					local g2=Duel.SelectMatchingCard(tp,s.pcfilter,tp,LOCATION_HAND+LOCATION_DECK+LOCATION_GRAVE+LOCATION_EXTRA,0,1,1,nil)
 					local tc2=g2:GetFirst()
 					
 					if tc2 then
 						if Duel.MoveToField(tc2,tp,tp,LOCATION_PZONE,POS_FACEUP,true) then
-							-- También le clavamos la supresión de efectos al segundo monstruo hasta la End Phase
+							-- Clava la supresión de efectos también al segundo Péndulo hasta la End Phase
 							local e3=Effect.CreateEffect(c)
 							e3:SetType(EFFECT_TYPE_SINGLE)
 							e3:SetCode(EFFECT_DISABLE)
