@@ -97,26 +97,20 @@ function s.rescon(sg,e,tp,mg)
 	-- Paso B: Si el grupo aún no tiene las 2 cartas completas, da paso libre para seguir eligiendo
 	if #sg<2 then return true end
 	
-	-- Paso C: VERIFICACIÓN CRUZADA HÍBRIDA DE TU MANUSCRITO
+	-- Paso C: VERIFICACIÓN CRUZADA CON FILTRO TUNER DE TU NUEVA PLANIFICACIÓN
 	local c1=sg:GetFirst()
 	local c2=sg:GetNext()
 	
-	-- Condición 1: Carta 1 es Supreme King Y Carta 2 es el Clear Wing real (70771599)
-	local opt1 = c1:IsSetCard(SET_SUPREME_KING_DRAGON) and c2:IsCode(70771599)
-	-- Condición 2: Carta 1 es el Clear Wing real (70771599) Y Carta 2 es Supreme King
-	local opt2 = c1:IsCode(70771599) and c2:IsSetCard(SET_SUPREME_KING_DRAGON)
+	-- Condición Alternativa 1: Carta 1 es un Tuner Supreme King Dragon Y Carta 2 es el Clear Wing legítimo
+	local opt1 = (c1:IsSetCard(SET_SUPREME_KING_DRAGON) and c1:IsType(TYPE_TUNER)) and c2:IsCode(70771599)
+	-- Condición Alternativa 2: Carta 1 es el Clear Wing legítimo Y Carta 2 es un Tuner Supreme King Dragon
+	local opt2 = c1:IsCode(70771599) and (c2:IsSetCard(SET_SUPREME_KING_DRAGON) and c2:IsType(TYPE_TUNER))
 	
-	-- Paso D: AUDITORÍA MATEMÁTICA DE NIVEL 10 (SANEADO)
-	-- Extrae el Nivel de fábrica de ambas cartas de la mesa (soporta cálculo alterno si fuesen Xyz de fondo)
-	local lv1 = c1:IsType(TYPE_XYZ) and c1:GetRank() or c1:GetLevel()
-	local lv2 = c2:IsType(TYPE_XYZ) and c2:GetRank() or c2:GetLevel()
-	local lvl_chk = (lv1 + lv2 == 10)
-	
-	-- Retorna verdadero únicamente si se cumple la identidad de Kaiba Y la suma da exactamente 10
-	return (opt1 or opt2) and lvl_chk
+	-- Retorna verdadero únicamente si se cumple el emparejamiento exacto de Cantante + As de Sincronía
+	return opt1 or opt2
 end
 
--- Filtro base general de cartas elegibles para el sacrificio en tu campo
+-- Filtro base general de cartas elegibles para el sacrificio en tu campo (Sintonizado)
 function s.costfilter(c)
 	return c:IsFaceup() and (c:IsSetCard(SET_SUPREME_KING_DRAGON) or c:IsCode(70771599))
 end
@@ -143,13 +137,13 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
 		and c:IsCanBeSpecialSummoned(e,SUMMON_TYPE_SYNCHRO,tp,false,true)
 		and Duel.SelectEffectYesNo(tp,c,aux.Stringid(id,0)) then
 		
-		-- Abre tu campo de forma interactiva aplicando el filtro híbrido estricto de nivel 10
+		-- Abre tu campo de forma interactiva aplicando la nueva aduana de Cantante
 		local sg=aux.SelectUnselectGroup(g,e,tp,2,2,s.rescon,1,tp,HINTMSG_RELEASE)
 		
-		-- Libera y tributa el par exacto que suma 10
+		-- Libera y tributa el par exacto (1 Tuner arquetípico + Clear Wing)
 		Duel.Release(sg,REASON_COST)
 		
-		-- Ejecuta la Invocación Especial legítima del Crystal Wing del Extra Deck
+		-- Ejecuta la Invocación Especial legítima del Crystal Wing del Extra Deck de forma impecable
 		if Duel.SpecialSummon(c,SUMMON_TYPE_SYNCHRO,tp,tp,false,true,POS_FACEUP)>0 then
 			c:CompleteProcedure()
 		end

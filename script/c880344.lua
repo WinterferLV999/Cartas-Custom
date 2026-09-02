@@ -90,13 +90,18 @@ function s.settg(e,tp,eg,ep,ev,re,r,rp,chk)
 		and Duel.IsExistingMatchingCard(s.setfilter,tp,LOCATION_DECK+LOCATION_GRAVE,0,1,nil) end
 end
 function s.setop(e,tp,eg,ep,ev,re,r,rp)
+	-- Valida que te queden casillas libres en la zona trasera
 	if Duel.GetLocationCount(tp,LOCATION_SZONE)<=0 then return end
+	
 	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SET)
 	local g=Duel.SelectMatchingCard(tp,s.setfilter,tp,LOCATION_DECK+LOCATION_GRAVE,0,1,1,nil)
 	local tc=g:GetFirst()
+	
 	if tc then
-		Duel.MoveToField(tc,tp,tp,LOCATION_SZONE,POS_FACEDOWN,true)
-		Duel.ConfirmCards(1-tp,tc)
+		-- REPARADO DEFINITIVO: Reemplazamos Duel.MoveToField por Duel.SSet.
+		-- Esto le inyecta el flag STATUS_SET_TURN a la trampa en la caché de tu servidor,
+		-- bloqueando su activación inmediata y obligándote a esperar el cambio de turno.
+		Duel.SSet(tp,tc)
 	end
 end
 function s.attrtg(e,c)
