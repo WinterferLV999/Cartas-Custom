@@ -118,20 +118,29 @@ function s.spfilter(c,e,tp)
 	return c:IsSetCard(SET_SUPREME_KING_DRAGON) and c:IsLevel(4) 
 		and c:IsCanBeSpecialSummoned(e,0,tp,false,false)
 end
-
--- REPARADO DEFINITIVO BEYOND PARAMETERS: Limpiamos por completo las funciones IsXyzSummonable
--- e IsSynchroSummonable que causaban el crash de tipo de datos en tu línea 104.
--- El filtro ahora valida pasivamente la identidad de los jefes en tu Extra Deck.
-function s.exfilter(c,e,tp)
+function s.exfilter(c,e,tp,mg,sg_group)
 	if not (c:IsSetCard(SET_SUPREME_KING_DRAGON) and c:IsLocation(LOCATION_EXTRA)) then return false end
-	-- Da luz verde de forma pasiva a cualquier Fusión, Sincronía o Xyz del arquetipo
-	return c:IsType(TYPE_FUSION+TYPE_SYNCHRO+TYPE_XYZ)
+	
+	if c:IsType(TYPE_FUSION) then
+		-- Valida si la Fusión se puede realizar con los materiales actuales del campo
+		return c:CheckFusionMaterial(mg, nil, tp)
+	elseif c:IsType(TYPE_SYNCHRO) then
+		-- Valida si la Sincronía es legal con los monstruos disponibles
+		return c:IsSynchroSummonable(nil, mg)
+	elseif c:IsType(TYPE_XYZ) then
+		-- Valida si el Xyz se puede invocar con los monstruos del campo
+		return c:IsXyzSummonable(nil, mg)
+	end
+	return false
 end
 
 function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk)
 	local c=e:GetHandler()
+	local mg=Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,0,nil)
 	if chk==0 then return c:IsReleasable()
-		and Duel.IsExistingMatchingCard(s.spfilter,tp,LOCATION_HAND+LOCATION_DECK+LOCATION_EXTRA+LOCATION_GRAVE,0,1,nil,e,tp) end
+		and Duel.IsExistingMatchingCard(s.spfilter,tp,LOCATION_HAND+LOCATION_DECK+LOCATION_EXTRA+LOCATION_GRAVE,0,1,nil,e,tp) 
+		-- Verificamos de antemano si hay al menos un jefe invocable con el campo actual
+		and Duel.IsExistingMatchingCard(s.exfilter,tp,LOCATION_EXTRA,0,1,nil,e,tp,mg) end
 	Duel.SetOperationInfo(0,CATEGORY_RELEASE,c,1,0,0)
 	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND+LOCATION_DECK+LOCATION_EXTRA+LOCATION_GRAVE)
 end
@@ -146,7 +155,10 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
 	local g=Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_HAND+LOCATION_DECK+LOCATION_EXTRA+LOCATION_GRAVE,0,1,1,nil,e,tp)
 	
 	if #g>0 and Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)>0 then
-		local sg=Duel.GetMatchingGroup(s.exfilter,tp,LOCATION_EXTRA,0,nil,e,tp)
+		-- Recalculamos los materiales del campo (incluyendo al monstruo recién invocado si sirve como material)
+		local mg=Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,0,nil)
+		local sg=Duel.GetMatchingGroup(s.exfilter,tp,LOCATION_EXTRA,0,nil,e,tp,mg)
+		
 		if #sg==0 or not Duel.SelectYesNo(tp,aux.Stringid(id,2)) then return end
 		
 		Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
@@ -156,23 +168,15 @@ function s.spop(e,tp,eg,ep,ev,re,r,rp)
 		Duel.BreakEffect()
 		
 		if sc:IsType(TYPE_FUSION) then
-			-- Ejecución limpia de fusión procedural para servidores de la vieja escuela
-			local fgroup=Duel.GetMatchingGroup(Card.IsCanBeFusionMaterial,tp,LOCATION_MZONE,0,nil,sc)
-			if #fgroup>0 then
-				local sg2=Duel.SelectMatchingCard(tp,Card.IsCanBeFusionMaterial,tp,LOCATION_MZONE,0,1,99,nil,sc)
-				if #sg2>0 then
-					Duel.SetFusionMaterial(sg2)
-					Duel.SendtoGrave(sg2,REASON_EFFECT+REASON_MATERIAL+REASON_FUSION)
-					Duel.SpecialSummon(sc,SUMMON_TYPE_FUSION,tp,tp,false,false,POS_FACEUP)
-					sc:CompleteProcedure()
-				end
-			end
+			local fud=Duel.SelectFusionMaterial(tp,sc,mg,nil,tp)
+			sc:SetMaterial(fud)
+			Duel.SendtoGrave(fud,REASON_MATERIAL+REASON_FUSION)	
+			Duel.SpecialSummon(sc,SUMMON_TYPE_FUSION,tp,tp,false,false,POS_FACEUP)
+			sc:CompleteProcedure()
 		elseif sc:IsType(TYPE_SYNCHRO) then
-			-- Invoca de forma Sincronía interactiva abriendo el menú nativo del Extra Deck
-			Duel.SynchroSummon(tp,sc)
+			Duel.SynchroSummon(tp,sc,nil,mg)
 		elseif sc:IsType(TYPE_XYZ) then
-			-- Invoca de forma Xyz acoplando tus materiales de campo abajo del monstruo elegido
-			Duel.XyzSummon(tp,sc)
+			Duel.XyzSummon(tp,sc,nil,mg)
 		end
 	end
 end

@@ -62,6 +62,7 @@ function s.initial_effect(c)
 	e5:SetType(EFFECT_TYPE_QUICK_O)
 	e5:SetCode(EVENT_FREE_CHAIN)
 	e5:SetRange(LOCATION_MZONE)
+	e5:SetHintTiming(0,TIMING_STANDBY_PHASE|TIMING_MAIN_END|TIMINGS_CHECK_MONSTER_E)
 	e5:SetCost(s.spcost)
 	e5:SetTarget(s.sptg)
 	e5:SetOperation(s.spop2)
@@ -204,71 +205,52 @@ function s.spcost(e,tp,eg,ep,ev,re,r,rp,chk)
 	if chk==0 then return e:GetHandler():IsAbleToExtraAsCost() end
 	Duel.SendtoDeck(e:GetHandler(),nil,0,REASON_COST)
 end
-
-function s.bypass_filter(c)
-	local set = SET_STARVING_VENOM or 0x110f
-	return (c:IsSetCard(set) or c:IsCode(13331639)) and c:IsMonster()
+function s.spfilter22(c,e,tp)
+	if c:IsLocation(LOCATION_EXTRA) and Duel.GetLocationCountFromEx(tp,tp,nil,c)==0 then return false end
+	-- Permite listar monstruos "Rebellion", el ID base del dragón, o a Z-ARC (13331639)
+	return (c:IsSetCard(SET_STARVING_VENOM) or c:IsCode(43387895) or c:IsCode(13331639))
+		and c:IsMonster() and not (c:IsSetCard(SET_SUPREME_KING_DRAGON) and c:IsLevelAbove(10)) and c:IsCanBeSpecialSummoned(e,0,tp,true,true)
 end
-
-function s.extra_filter(c,e,tp)
-	if Duel.GetLocationCountFromEx(tp,tp,nil,c)==0 then return false end
+function s.bypass_filter(c,e,tp)
 	local set = SET_STARVING_VENOM or 0x110f
 	return (c:IsSetCard(set) or c:IsCode(13331639)) and c:IsMonster() and c:IsCanBeSpecialSummoned(e,0,tp,true,true)
 end
 
+function s.extra_filter(c,e,tp)
+	if c:IsLocation(LOCATION_EXTRA) and Duel.GetLocationCountFromEx(tp,tp,nil,c)==0 then return false end
+	return s.bypass_filter(c,e,tp)
+end
+
 function s.sptg(e,tp,eg,ep,ev,re,r,rp,chk)
-	local loc=LOCATION_EXTRA
-	if Duel.GetLocationCount(tp,LOCATION_MZONE)>0 or Duel.GetMZoneCount(tp,e:GetHandler())>0 then
-		loc=loc+LOCATION_GRAVE+LOCATION_REMOVED
-	end
+	-- Incluimos todas las ubicaciones posibles sabiendo que el coste liberará la zona de monstruos
+	local loc = LOCATION_EXTRA + LOCATION_GRAVE + LOCATION_REMOVED
 	if chk==0 then 
-		local ex = Duel.IsExistingMatchingCard(s.extra_filter,tp,LOCATION_EXTRA,0,1,nil,e,tp)
-		local gy = Duel.IsExistingMatchingCard(s.bypass_filter,tp,LOCATION_GRAVE,0,1,nil)
-		local rm = Duel.IsExistingMatchingCard(s.bypass_filter,tp,LOCATION_REMOVED,0,1,nil)
-		return ex or gy or rm
+		return Duel.IsExistingMatchingCard(s.extra_filter,tp,loc,0,1,nil,e,tp) 
 	end
 	Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,loc)
 end
 
 function s.spop2(e,tp,eg,ep,ev,re,r,rp)
-	local c=e:GetHandler()
-	
-	local loc=LOCATION_EXTRA
-	if Duel.GetLocationCount(tp,LOCATION_MZONE)>0 then loc=loc+LOCATION_GRAVE+LOCATION_REMOVED end
+	local loc = LOCATION_EXTRA + LOCATION_GRAVE + LOCATION_REMOVED
 	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_SPSUMMON)
 	
-	local set = SET_STARVING_VENOM or 0x110f
-	
-	-- Menú de selección interactivo nativo limpio
-	local g=Duel.SelectMatchingCard(tp,function(tc)
-		if tc:IsLocation(LOCATION_EXTRA) then 
-			return s.extra_filter(tc,e,tp) 
-		elseif tc:IsLocation(LOCATION_GRAVE) then
-			return (tc:IsSetCard(set) or tc:IsCode(13331639)) and tc:IsMonster()
+	-- Selección limpia evaluando correctamente las restricciones del Extra Deck vs Cementerio/Destierro
+	local g = Duel.SelectMatchingCard(tp,function(c)
+		if c:IsLocation(LOCATION_EXTRA) then
+			return s.extra_filter(c,e,tp)
 		else
-			return tc:IsFaceup() and (tc:IsSetCard(set) or tc:IsCode(13331639)) and tc:IsMonster()
+			return s.bypass_filter(c,e,tp) and Duel.GetLocationCount(tp,LOCATION_MZONE)>0
 		end
 	end,tp,loc,0,1,1,nil)
 	
 	if #g>0 then
-		local sc=g:GetFirst()
-		
+		local sc = g:GetFirst()
+		-- Usamos siempre SpecialSummon estándar para que el motor registre el estado legal de la carta
 		if sc:IsLocation(LOCATION_EXTRA) then
-			Duel.SpecialSummon(sc,SUMMON_TYPE_FUSION,tp,tp,true,true,POS_FACEUP)
+			Duel.SpecialSummon(sc, SUMMON_TYPE_FUSION, tp, tp, true, true, POS_FACEUP)
+			sc:CompleteProcedure()
 		else
-			-- ESCENARIO B: Para cartas en Cementerio o Destierro (Salto directo sin tocar Extra Deck)
-			sc:ResetEffect(EFFECT_CANNOT_SPECIAL_SUMMON,RESET_COPY)
-			
-			if Duel.MoveToField(sc,tp,tp,LOCATION_MZONE,POS_FACEUP,true) then
-				-- Sella los registros oficiales de Fusión en la memoria del emulador antiguo
-				sc:SetStatus(STATUS_PROC_COMPLETE,true)
-				sc:SetStatus(STATUS_SPSUMMON_STEP,true)
-				
-				-- Dispara los radares globales de forma legal para que cuente como Invocación Especial Real
-				Duel.RaiseSingleEvent(sc,EVENT_SPSUMMON_SUCCESS,e,REASON_EFFECT,tp,tp,0)
-				Duel.RaiseEvent(sc,EVENT_SPSUMMON_SUCCESS,e,REASON_EFFECT,tp,tp,0)
-				Duel.SpecialSummonComplete()
-			end
+			Duel.SpecialSummon(sc, 0, tp, tp, true, true, POS_FACEUP)
 		end
 	end
 end
