@@ -24,11 +24,11 @@ function s.initial_effect(c)
 	e2:SetOperation(s.counterop)
 	c:RegisterEffect(e2)
 	
-	-- EFECTO ③ REPARADO (CANDADO DE TURNO): Esta Magia sella el nombre que ya invocó SÓLO por el resto de este turno
+	-- EFECTO ③ REPARADO FÍSICAMENTE (SIN CRASH EN LÍNEA 31): Bloqueo de turno absoluto por ID guardado en la Magia Continua
 	local fusion_params={
 		fusfilter=function(tc)
-			-- CANDADO DE TURNO LOCAL: Bloquea el monstruo si tiene el flag activo este turno
-			return tc:IsSetCard(SET_CUBIC) and tc:GetFlagEffect(id)==0
+			-- SOLUCIÓN: Usamos 'c' (la Magia Continua) directamente desde la cabecera, removiendo 'e' de los parámetros
+			return tc:IsSetCard(SET_CUBIC) and c:GetFlagEffect(id+tc:GetCode())==0
 		end
 	}
 	local e3=Effect.CreateEffect(c)
@@ -106,7 +106,7 @@ function s.counterop(e,tp,eg,ep,ev,re,r,rp)
 end
 
 -- =========================================================================
--- ---     RESOLUCIÓN DEL EFECTO ③ (FUSIÓN CON CANDADO DE NOMBRE)         ---
+-- ---     RESOLUCIÓN DEL EFECTO ③ (FUSIÓN CON CANDADO DE TURNO SEGURO)  ---
 -- =========================================================================
 function s.fusconfilter(c,tp)
 	return c:IsSetCard(SET_CUBIC) and c:IsFaceup() and c:IsControler(tp)
@@ -129,12 +129,9 @@ function s.fusop(params)
 		local tc=g:GetFirst()
 		
 		if tc and tc:IsType(TYPE_FUSION) then
-			-- CORRECCIÓN: Busca todas las copias de ese monstruo específico en tu posesión
-			local monocopies=Duel.GetMatchingGroup(Card.IsCode,tp,LOCATION_EXTRA+LOCATION_DECK+LOCATION_HAND+LOCATION_GRAVE,0,nil,tc:GetCode())
-			for copy in aux.Next(monocopies) do
-				-- Sella las copias con la propiedad RESET_PHASE+PHASE_END para que el bloqueo expire en la End Phase
-				copy:RegisterFlagEffect(id,RESET_EVENT+RESETS_STANDARD+RESET_PHASE+PHASE_END,0,1)
-			end
+			-- Registra la marca directamente sobre el cuerpo físico de ESTA Magia Continua (c)
+			-- Con la propiedad RESET_PHASE+PHASE_END el candado expira obligatoriamente en la End Phase
+			c:RegisterFlagEffect(id+tc:GetCode(),RESET_EVENT+RESETS_STANDARD+RESET_PHASE+PHASE_END,0,1)
 		end
 	end
 end

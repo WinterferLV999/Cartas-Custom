@@ -29,7 +29,7 @@ function s.initial_effect(c)
 	e4:SetType(EFFECT_TYPE_QUICK_O+EFFECT_TYPE_XMATERIAL) -- Se otorga al monstruo portador en el campo
 	e4:SetCode(EVENT_FREE_CHAIN)
 	e4:SetRange(LOCATION_MZONE)
-	e4:SetCountLimit(1)
+	e4:SetCountLimit(1,{id,1})
 	e4:SetCondition(s.bpcon) -- NUEVO CANDADO: Condición de Battle Phase acoplada abajo
 	e4:SetCost(s.dcost)      -- Costo genérico de desprendimiento de material
 	e4:SetTarget(s.dtarget)
