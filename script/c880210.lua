@@ -57,7 +57,7 @@ s.counter_list={0x1041}
 
 -- --- 1. FILTROS DE TU BASE DE FUSIÓN EXITOSA ---
 function s.mfilter2(c,fc,sumtype,tp)
-	return c:GetCounter(0x1041)>0 and c:IsOnField()
+	return c:GetCounter(0x1041)>0 and c:IsAttribute(ATTRIBUTE_DARK,fc,sumtype,tp) and c:IsOnField()
 end
 
 function s.dark_filter(c,fc,sumtype,tp)
