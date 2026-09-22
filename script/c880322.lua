@@ -7,15 +7,6 @@ function s.initial_effect(c)
 	e1:SetCode(EVENT_FREE_CHAIN)
 	c:RegisterEffect(e1)
 	
-	-- EFECTO ②: El oponente NO puede desterrar cartas de TU Cementerio (Tú sí puedes)
-	local e4=Effect.CreateEffect(c)
-	e4:SetType(EFFECT_TYPE_FIELD)
-	e4:SetCode(EFFECT_CANNOT_REMOVE)
-	e4:SetRange(LOCATION_FZONE)
-	e4:SetTargetRange(LOCATION_GRAVE,0) -- Protege únicamente a TU Cementerio
-	e4:SetTarget(s.remtg)
-	c:RegisterEffect(e4)
-	
 	-- EFECTO ③: No puedes Invocar de Modo Especial, excepto monstruos "Cúbico" (Unilateral para ti)
 	local e5=Effect.CreateEffect(c)
 	e5:SetType(EFFECT_TYPE_FIELD)
